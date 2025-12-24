@@ -28,6 +28,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import { getKidById, getKidStats } from "@/lib/api/kids";
 import { getParentById } from "@/lib/api/parents";
@@ -59,7 +66,8 @@ export default function ViewKidPage() {
   // Pagination state
   const [tasksPage, setTasksPage] = useState(1);
   const [rewardsPage, setRewardsPage] = useState(1);
-  const itemsPerPage = 5;
+  const [tasksItemsPerPage, setTasksItemsPerPage] = useState(10);
+  const [rewardsItemsPerPage, setRewardsItemsPerPage] = useState(10);
 
   useEffect(() => {
     async function fetchKidData() {
@@ -95,9 +103,9 @@ export default function ViewKidPage() {
           title: task.name,
           assignedBy: task.parentId?.fullName || "Unknown",
           coins: task.starsPerCompletion || 0,
-          status: task.isCompleted ? "completed" : "pending",
+          status: task.isCompletedForPeriod ? "completed" : "pending",
           dueDate: task.startDate,
-          completedDate: task.completedAt,
+          completedDate: task.completedAtForPeriod || task.completedAt,
           photoProof: task.requiresPhotoProof || false,
           photoProofStatus: task.photoProofPath ? "approved" : null,
         }));
@@ -109,7 +117,8 @@ export default function ViewKidPage() {
           name: reward.name,
           cost: reward.costInCoins || 0,
           available: reward.isActive && reward.status === 1,
-          redeemed: false, // This would need to be checked from RewardRedemption model
+          redeemed: reward.redeemed || false,
+          redeemedAt: reward.redeemedAt || null,
         }));
 
         const age = kidData.dateOfBirth ? calculateAge(kidData.dateOfBirth) : null;
@@ -168,25 +177,34 @@ export default function ViewKidPage() {
     }
   };
 
+  // Reset to page 1 when items per page changes
+  useEffect(() => {
+    setTasksPage(1);
+  }, [tasksItemsPerPage]);
+
+  useEffect(() => {
+    setRewardsPage(1);
+  }, [rewardsItemsPerPage]);
+
   // Paginated tasks
   const paginatedTasks = useMemo(() => {
     if (!tasks || tasks.length === 0) return [];
-    const start = (tasksPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
+    const start = (tasksPage - 1) * tasksItemsPerPage;
+    const end = start + tasksItemsPerPage;
     return tasks.slice(start, end);
-  }, [tasks, tasksPage]);
+  }, [tasks, tasksPage, tasksItemsPerPage]);
 
-  const totalTasksPages = Math.ceil((tasks?.length || 0) / itemsPerPage);
+  const totalTasksPages = Math.max(1, Math.ceil((tasks?.length || 0) / tasksItemsPerPage));
 
   // Paginated rewards
   const paginatedRewards = useMemo(() => {
     if (!rewards || rewards.length === 0) return [];
-    const start = (rewardsPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
+    const start = (rewardsPage - 1) * rewardsItemsPerPage;
+    const end = start + rewardsItemsPerPage;
     return rewards.slice(start, end);
-  }, [rewards, rewardsPage]);
+  }, [rewards, rewardsPage, rewardsItemsPerPage]);
 
-  const totalRewardsPages = Math.ceil((rewards?.length || 0) / itemsPerPage);
+  const totalRewardsPages = Math.max(1, Math.ceil((rewards?.length || 0) / rewardsItemsPerPage));
 
   if (loading) {
     return (
@@ -373,6 +391,7 @@ export default function ViewKidPage() {
                         <TableHead>Status</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Photo Proof</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -428,40 +447,73 @@ export default function ViewKidPage() {
                               <span className="text-muted-foreground text-sm">Not Required</span>
                             )}
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Link href={`/admin/tasks/${task._id || task.id}`}>
+                              <Button variant="ghost" size="sm">
+                                <Eye className="size-3.5 mr-1.5" />
+                                View Details
+                              </Button>
+                            </Link>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
 
-                  {totalTasksPages > 1 && (
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setTasksPage(prev => Math.max(1, prev - 1))}
-                            className={tasksPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        {Array.from({ length: totalTasksPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setTasksPage(page)}
-                              isActive={tasksPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setTasksPage(prev => Math.min(totalTasksPages, prev + 1))}
-                            className={tasksPage === totalTasksPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
+                  {/* Tasks Pagination */}
+                  <div className="mt-6 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Show</span>
+                        <Select value={tasksItemsPerPage.toString()} onValueChange={(value) => setTasksItemsPerPage(Number(value))}>
+                          <SelectTrigger className="w-20 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground">entries</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Showing {(tasksPage - 1) * tasksItemsPerPage + 1} to {Math.min(tasksPage * tasksItemsPerPage, tasks.length)} of {tasks.length} tasks
+                      </div>
+                    </div>
+                    {totalTasksPages > 1 && (
+                      <div className="flex justify-center">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => setTasksPage(prev => Math.max(1, prev - 1))}
+                                className={tasksPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: totalTasksPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setTasksPage(page)}
+                                  isActive={tasksPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => setTasksPage(prev => Math.min(totalTasksPages, prev + 1))}
+                                className={tasksPage === totalTasksPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </TabsContent>
@@ -505,44 +557,78 @@ export default function ViewKidPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={reward.redeemed ? "default" : "secondary"}>
-                              {reward.redeemed ? "Redeemed" : "Not Redeemed"}
-                            </Badge>
+                            {reward.redeemed ? (
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="default">Redeemed</Badge>
+                                {reward.redeemedAt && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDate(reward.redeemedAt)}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="secondary">Not Redeemed</Badge>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
 
-                  {totalRewardsPages > 1 && (
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setRewardsPage(prev => Math.max(1, prev - 1))}
-                            className={rewardsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        {Array.from({ length: totalRewardsPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setRewardsPage(page)}
-                              isActive={rewardsPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setRewardsPage(prev => Math.min(totalRewardsPages, prev + 1))}
-                            className={rewardsPage === totalRewardsPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
+                  {/* Rewards Pagination */}
+                  <div className="mt-6 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Show</span>
+                        <Select value={rewardsItemsPerPage.toString()} onValueChange={(value) => setRewardsItemsPerPage(Number(value))}>
+                          <SelectTrigger className="w-20 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground">entries</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Showing {(rewardsPage - 1) * rewardsItemsPerPage + 1} to {Math.min(rewardsPage * rewardsItemsPerPage, rewards.length)} of {rewards.length} rewards
+                      </div>
+                    </div>
+                    {totalRewardsPages > 1 && (
+                      <div className="flex justify-center">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => setRewardsPage(prev => Math.max(1, prev - 1))}
+                                className={rewardsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: totalRewardsPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setRewardsPage(page)}
+                                  isActive={rewardsPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => setRewardsPage(prev => Math.min(totalRewardsPages, prev + 1))}
+                                className={rewardsPage === totalRewardsPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </TabsContent>

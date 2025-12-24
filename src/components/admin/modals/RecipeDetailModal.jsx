@@ -19,9 +19,9 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{recipe.name}</DialogTitle>
+          <DialogTitle className="text-2xl">{recipe.title || recipe.name || "Recipe"}</DialogTitle>
           <DialogDescription>
-            View complete recipe details
+            {recipe.description || "View complete recipe details"}
           </DialogDescription>
         </DialogHeader>
 
@@ -29,11 +29,17 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
           {/* Basic Info */}
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <Label className="text-muted-foreground">Category</Label>
+              <Label className="text-muted-foreground">Type</Label>
               <div className="mt-1">
                 <Badge variant="outline" className="capitalize">
-                  {recipe.category}
+                  {recipe.type || recipe.category || "other"}
                 </Badge>
+                {recipe.isFavorite && (
+                  <Badge variant="default" className="ml-2 text-xs">⭐ Favorite</Badge>
+                )}
+                {recipe.hasBeenTried && (
+                  <Badge variant="secondary" className="ml-2 text-xs">Tried</Badge>
+                )}
               </div>
             </div>
 
@@ -41,7 +47,7 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
               <Label className="text-muted-foreground">Prep Time</Label>
               <div className="mt-1 flex items-center gap-2">
                 <Clock className="size-4 text-muted-foreground" />
-                <span className="font-medium">{recipe.prepTime}</span>
+                <span className="font-medium">{recipe.prepTime ? `${recipe.prepTime} min` : "N/A"}</span>
               </div>
             </div>
 
@@ -49,7 +55,7 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
               <Label className="text-muted-foreground">Cook Time</Label>
               <div className="mt-1 flex items-center gap-2">
                 <Clock className="size-4 text-muted-foreground" />
-                <span className="font-medium">{recipe.cookTime}</span>
+                <span className="font-medium">{recipe.cookTime ? `${recipe.cookTime} min` : "N/A"}</span>
               </div>
             </div>
 
@@ -57,17 +63,41 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
               <Label className="text-muted-foreground">Servings</Label>
               <div className="mt-1 flex items-center gap-2">
                 <UtensilsCrossed className="size-4 text-muted-foreground" />
-                <span className="font-medium">{recipe.servings}</span>
+                <span className="font-medium">{recipe.servings || "N/A"}</span>
               </div>
             </div>
 
-            <div>
-              <Label className="text-muted-foreground">Created By</Label>
-              <div className="mt-1 flex items-center gap-2">
-                <User className="size-4 text-muted-foreground" />
-                <span className="font-medium">{recipe.createdBy.name}</span>
+            {recipe.difficulty && (
+              <div>
+                <Label className="text-muted-foreground">Difficulty</Label>
+                <div className="mt-1">
+                  <Badge variant="outline" className="capitalize">
+                    {recipe.difficulty}
+                  </Badge>
+                </div>
               </div>
-            </div>
+            )}
+
+            {recipe.totalCalories && (
+              <div>
+                <Label className="text-muted-foreground">Total Calories</Label>
+                <div className="mt-1">
+                  <span className="font-medium">{recipe.totalCalories} cal</span>
+                </div>
+              </div>
+            )}
+
+            {recipe.createdBy && (
+              <div>
+                <Label className="text-muted-foreground">Created By</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <User className="size-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {recipe.createdBy.fullName || recipe.createdBy.username || "N/A"}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div>
               <Label className="text-muted-foreground">Created At</Label>
@@ -85,12 +115,36 @@ export default function RecipeDetailModal({ open, onOpenChange, recipe }) {
                 <BookOpen className="size-4" />
                 Ingredients
               </Label>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                {recipe.ingredients.map((ingredient, index) => (
-                  <li key={index} className="text-foreground">
-                    {ingredient}
-                  </li>
-                ))}
+              <ul className="list-disc list-inside space-y-2 text-sm">
+                {recipe.ingredients.map((ingredient, index) => {
+                  // Handle both object and string formats
+                  if (typeof ingredient === 'string') {
+                    return (
+                      <li key={index} className="text-foreground">
+                        {ingredient}
+                      </li>
+                    );
+                  }
+                  // Handle object format with name, amount, unit, etc.
+                  let ingredientText = ingredient.name || '';
+                  if (ingredient.amount) {
+                    ingredientText += ` - ${ingredient.amount}`;
+                    if (ingredient.unit) {
+                      ingredientText += ` ${ingredient.unit}`;
+                    }
+                  }
+                  if (ingredient.calories) {
+                    ingredientText += ` (${ingredient.calories} cal)`;
+                  }
+                  if (ingredient.notes) {
+                    ingredientText += ` - ${ingredient.notes}`;
+                  }
+                  return (
+                    <li key={index} className="text-foreground">
+                      {ingredientText || 'N/A'}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

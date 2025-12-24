@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import { getParents, getParentStats } from "@/lib/api/parents";
 import { getKids } from "@/lib/api/kids";
@@ -26,6 +41,8 @@ export default function ParentsTable() {
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     async function fetchParents() {
@@ -88,11 +105,27 @@ export default function ParentsTable() {
     fetchParents();
   }, []);
 
-  const filteredParents = parents.filter(
-    (parent) =>
-      parent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      parent.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Reset to page 1 when search query or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
+
+  const filteredParents = useMemo(() => {
+    return parents.filter(
+      (parent) =>
+        parent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        parent.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [parents, searchQuery]);
+
+  // Paginated parents
+  const paginatedParents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredParents.slice(start, end);
+  }, [filteredParents, currentPage, itemsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredParents.length / itemsPerPage));
 
   const getInitials = (name) => {
     return name
@@ -149,7 +182,7 @@ export default function ParentsTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredParents.map((parent) => (
+                paginatedParents.map((parent) => (
                   <TableRow key={parent._id || parent.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -179,6 +212,63 @@ export default function ParentsTable() {
               )}
             </TableBody>
           </Table>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && filteredParents.length > 0 && (
+          <div className="mt-6 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Show</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger className="w-20 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">entries</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredParents.length)} of {filteredParents.length} parents
+              </div>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

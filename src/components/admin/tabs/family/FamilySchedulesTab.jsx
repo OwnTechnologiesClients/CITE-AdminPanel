@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, User } from "lucide-react";
+import { Calendar, Clock, User, MapPin, CheckCircle2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,85 +13,94 @@ import {
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 
-export default function FamilyEventsTab({ events }) {
+export default function FamilySchedulesTab({ schedules }) {
   return (
     <div className="space-y-4">
-      {events.length === 0 ? (
+      {schedules.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            No events found
+            No schedules found
           </CardContent>
         </Card>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Event Title</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Date & Time</TableHead>
+              <TableHead>Assigned To</TableHead>
               <TableHead>Location</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Created By</TableHead>
-              <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.map((event) => (
-              <TableRow key={event._id}>
+            {schedules.map((schedule) => (
+              <TableRow key={schedule._id}>
+                <TableCell className="font-medium">{schedule.title || "N/A"}</TableCell>
                 <TableCell>
-                  <div>
-                    <p className="font-medium">{event.title || "N/A"}</p>
-                    {event.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
-                    )}
-                    {event.eventType && (
-                      <Badge variant="outline" className="mt-1 capitalize">
-                        {event.eventType}
-                      </Badge>
-                    )}
-                  </div>
+                  <Badge variant="outline" className="capitalize">
+                    {schedule.type || "other"}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <Calendar className="size-4 text-muted-foreground" />
-                      <span>{formatDate(event.startDate)}</span>
+                      <span>{formatDate(schedule.startTime)}</span>
                     </div>
-                    {event.endDate && (
+                    {schedule.endTime && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="size-3" />
-                        <span>Until {formatDate(event.endDate)}</span>
+                        <span>Until {formatDate(schedule.endTime)}</span>
                       </div>
-                    )}
-                    {event.isAllDay && (
-                      <Badge variant="secondary" className="w-fit text-xs">All Day</Badge>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                  {event.location ? (
+                  {schedule.assignedPerson ? (
+                    <div className="flex items-center gap-2">
+                      <User className="size-4 text-muted-foreground" />
+                      <span className="font-medium">
+                        {schedule.assignedPerson.fullName || schedule.assignedPerson.username || "N/A"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Unassigned</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {schedule.location ? (
                     <div className="flex items-center gap-2">
                       <MapPin className="size-4 text-muted-foreground" />
-                      <span>{event.location}</span>
+                      <span>{schedule.location}</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground text-sm">N/A</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {event.createdBy ? (
+                  {schedule.isCompleted ? (
+                    <Badge variant="default" className="gap-1">
+                      <CheckCircle2 className="size-3" />
+                      Completed
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Pending</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {schedule.createdBy ? (
                     <div className="flex items-center gap-2">
                       <User className="size-4 text-muted-foreground" />
                       <span className="font-medium">
-                        {event.createdBy.fullName || event.createdBy.username || "N/A"}
+                        {schedule.createdBy.fullName || schedule.createdBy.username || "N/A"}
                       </span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground text-sm">N/A</span>
                   )}
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(event.createdAt)}
-                  </span>
                 </TableCell>
               </TableRow>
             ))}
@@ -101,4 +110,3 @@ export default function FamilyEventsTab({ events }) {
     </div>
   );
 }
-

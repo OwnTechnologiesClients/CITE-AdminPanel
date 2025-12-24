@@ -48,36 +48,50 @@ export default function FamilyRecipesTab({ recipes }) {
           </TableHeader>
           <TableBody>
             {recipes.map((recipe) => (
-              <TableRow key={recipe.id}>
-                <TableCell className="font-medium">{recipe.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="capitalize">
-                    {recipe.category}
-                  </Badge>
-                </TableCell>
+              <TableRow key={recipe._id}>
+                <TableCell className="font-medium">{recipe.title || "N/A"}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Clock className="size-4 text-muted-foreground" />
-                    <span>{recipe.prepTime}</span>
+                    <Badge variant="outline" className="capitalize">
+                      {recipe.type || "other"}
+                    </Badge>
+                    {recipe.isFavorite && (
+                      <Badge variant="default" className="text-xs">⭐ Favorite</Badge>
+                    )}
+                    {recipe.hasBeenTried && (
+                      <Badge variant="secondary" className="text-xs">Tried</Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Clock className="size-4 text-muted-foreground" />
-                    <span>{recipe.cookTime}</span>
+                    <span>{recipe.prepTime ? `${recipe.prepTime} min` : "N/A"}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-4 text-muted-foreground" />
+                    <span>{recipe.cookTime ? `${recipe.cookTime} min` : "N/A"}</span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <UtensilsCrossed className="size-4 text-muted-foreground" />
-                    <span>{recipe.servings}</span>
+                    <span>{recipe.servings || "N/A"}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <User className="size-4 text-muted-foreground" />
-                    <span className="font-medium">{recipe.createdBy.name}</span>
-                  </div>
+                  {recipe.createdBy ? (
+                    <div className="flex items-center gap-2">
+                      <User className="size-4 text-muted-foreground" />
+                      <span className="font-medium">
+                        {recipe.createdBy.fullName || recipe.createdBy.username || "N/A"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">N/A</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-muted-foreground">

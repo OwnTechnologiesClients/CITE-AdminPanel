@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import { getKids, getKidStats } from "@/lib/api/kids";
 import { getParentById } from "@/lib/api/parents";
@@ -37,6 +52,8 @@ export default function KidsTable() {
   const [kids, setKids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     async function fetchKids() {
@@ -51,23 +68,24 @@ export default function KidsTable() {
         const kidsWithStats = await Promise.all(
           kidsData.map(async (kid) => {
             try {
-              const [stats, tasks, parent] = await Promise.all([
+              const [stats] = await Promise.all([
                 getKidStats(kid._id).catch(() => ({ completedTasks: 0, totalCoins: 0 })),
-                getTasks({ kidId: kid._id }).catch(() => []),
-                kid.parentId?._id ? getParentById(kid.parentId._id).catch(() => null) : Promise.resolve(kid.parentId),
               ]);
 
-              const completedTasks = tasks.filter((task) => task.isCompleted).length;
               const age = kid.dateOfBirth ? calculateAge(kid.dateOfBirth) : null;
+
+              // parentId is now populated by backend with fullName and email
+              const parentName = kid.parentId?.fullName || (typeof kid.parentId === 'object' && kid.parentId.fullName) || "Unknown";
+              const parentId = kid.parentId?._id || (typeof kid.parentId === 'object' ? kid.parentId._id : kid.parentId);
 
               return {
                 _id: kid._id,
                 id: kid._id,
                 name: kid.name,
                 age: age,
-                parent: parent?.fullName || kid.parentId?.fullName || "Unknown",
-                parentId: kid.parentId?._id || kid.parentId,
-                tasksCompleted: stats?.completedTasks || completedTasks,
+                parent: parentName,
+                parentId: parentId,
+                tasksCompleted: stats?.completedTasks || 0, // Now counts all TaskCompletion records
                 coins: kid.totalCoins || stats?.totalCoins || 0,
                 status: kid.status === 1 ? "active" : "inactive",
                 joinedDate: kid.createdAt,
@@ -75,13 +93,18 @@ export default function KidsTable() {
             } catch (err) {
               console.error(`Error fetching stats for kid ${kid._id}:`, err);
               const age = kid.dateOfBirth ? calculateAge(kid.dateOfBirth) : null;
+              
+              // parentId is now populated by backend
+              const parentName = kid.parentId?.fullName || (typeof kid.parentId === 'object' && kid.parentId.fullName) || "Unknown";
+              const parentId = kid.parentId?._id || (typeof kid.parentId === 'object' ? kid.parentId._id : kid.parentId);
+              
               return {
                 _id: kid._id,
                 id: kid._id,
                 name: kid.name,
                 age: age,
-                parent: kid.parentId?.fullName || "Unknown",
-                parentId: kid.parentId?._id || kid.parentId,
+                parent: parentName,
+                parentId: parentId,
                 tasksCompleted: 0,
                 coins: kid.totalCoins || 0,
                 status: kid.status === 1 ? "active" : "inactive",
@@ -103,11 +126,27 @@ export default function KidsTable() {
     fetchKids();
   }, []);
 
-  const filteredKids = kids.filter(
-    (kid) =>
-      kid.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      kid.parent.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Reset to page 1 when search query or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
+
+  const filteredKids = useMemo(() => {
+    return kids.filter(
+      (kid) =>
+        kid.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        kid.parent.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [kids, searchQuery]);
+
+  // Paginated kids
+  const paginatedKids = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredKids.slice(start, end);
+  }, [filteredKids, currentPage, itemsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredKids.length / itemsPerPage));
 
   const getInitials = (name) => {
     return name
@@ -164,7 +203,7 @@ export default function KidsTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredKids.map((kid) => (
+                paginatedKids.map((kid) => (
                   <TableRow key={kid._id || kid.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -194,6 +233,63 @@ export default function KidsTable() {
               )}
             </TableBody>
           </Table>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && filteredKids.length > 0 && (
+          <div className="mt-6 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Show</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger className="w-20 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">entries</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredKids.length)} of {filteredKids.length} kids
+              </div>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

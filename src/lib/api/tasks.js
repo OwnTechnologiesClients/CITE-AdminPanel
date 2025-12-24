@@ -39,4 +39,17 @@ export async function getTasksByKidId(kidId) {
   }
 }
 
+/**
+ * Get task completions for a specific task (for recurring tasks)
+ */
+export async function getTaskCompletions(taskId) {
+  try {
+    const response = await apiGet(`/tasks/list/${taskId}/completions`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching task completions:', error);
+    throw error;
+  }
+}
+
 

@@ -18,6 +18,7 @@ import {
   Gift,
   Shield,
   KeyRound,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -161,11 +162,20 @@ const familiesMenuItems = [
   },
 ];
 
+const trackerMenuItems = [
+  {
+    title: "Activity Tracker",
+    icon: Activity,
+    href: "/admin/tracker",
+    hasSubmenu: false,
+  },
+];
+
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState(() => {
     const expanded = {};
-    const allItems = [...commonMenuItems, ...parentsKidsMenuItems, ...adultsMenuItems, ...familiesMenuItems];
+    const allItems = [...commonMenuItems, ...parentsKidsMenuItems, ...adultsMenuItems, ...familiesMenuItems, ...trackerMenuItems];
     allItems.forEach((item) => {
       if (item.hasSubmenu && pathname.startsWith(item.href)) {
         expanded[item.href] = true;
@@ -345,6 +355,20 @@ export default function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {familiesMenuItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator className="my-4" />
+
+        {/* Tracker Module */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Tracker Module
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {trackerMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

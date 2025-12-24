@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, Clock, MapPin, User, ChevronLeft, ChevronRigh
 import { formatDate } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function FamilyCalendarTab({ events = [], meals = [], lists = [] }) {
+export default function FamilyCalendarTab({ familyId, events = [], meals = [], lists = [] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const year = currentDate.getFullYear();
@@ -46,7 +46,7 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
   
   // Add events
   events.forEach((event) => {
-    const dateKey = normalizeDate(event.date);
+    const dateKey = normalizeDate(event.startDate);
     if (dateKey) {
       if (!itemsByDate[dateKey]) {
         itemsByDate[dateKey] = { events: [], meals: [], lists: [] };
@@ -252,10 +252,10 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
                         <div className="space-y-2.5">
                           {/* Events */}
                           {dayItems.events.slice(0, 2).map((event) => (
-                            <div key={event.id} className="text-xs space-y-1.5">
+                            <div key={event._id} className="text-xs space-y-1.5">
                               <div className="font-medium text-foreground flex items-center gap-1.5">
                                 <CalendarIcon className="size-3 text-blue-500" />
-                                <span>{event.time}</span> - <span className="font-semibold">{event.title}</span>
+                                <span className="font-semibold">{event.title || "N/A"}</span>
                               </div>
                               {event.location && (
                                 <div className="text-muted-foreground flex items-center gap-1.5">
@@ -263,41 +263,47 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
                                   <span>{event.location}</span>
                                 </div>
                               )}
-                              <div className="text-muted-foreground flex items-center gap-1.5">
-                                <User className="size-3" />
-                                <span>by {event.createdBy.name}</span>
-                              </div>
+                              {event.createdBy && (
+                                <div className="text-muted-foreground flex items-center gap-1.5">
+                                  <User className="size-3" />
+                                  <span>by {event.createdBy.fullName || event.createdBy.username || "N/A"}</span>
+                                </div>
+                              )}
                             </div>
                           ))}
                           {/* Meals */}
                           {dayItems.meals.slice(0, 2).map((meal) => (
-                            <div key={meal.id} className="text-xs space-y-1.5">
+                            <div key={meal._id} className="text-xs space-y-1.5">
                               <div className="font-medium text-foreground flex items-center gap-1.5">
                                 <Utensils className="size-3 text-green-500" />
-                                <span>{meal.time}</span> - <span className="font-semibold">{meal.name}</span>
+                                <span className="font-semibold">{meal.title || "N/A"}</span>
                               </div>
                               {meal.description && (
                                 <div className="text-muted-foreground pl-4">
                                   {meal.description}
                                 </div>
                               )}
-                              <div className="text-muted-foreground flex items-center gap-1.5">
-                                <User className="size-3" />
-                                <span>by {meal.createdBy.name}</span>
-                              </div>
+                              {meal.createdBy && (
+                                <div className="text-muted-foreground flex items-center gap-1.5">
+                                  <User className="size-3" />
+                                  <span>by {meal.createdBy.fullName || meal.createdBy.username || "N/A"}</span>
+                                </div>
+                              )}
                             </div>
                           ))}
                           {/* Lists */}
                           {dayItems.lists.slice(0, 2).map((list) => (
-                            <div key={list.id} className="text-xs space-y-1.5">
+                            <div key={list._id} className="text-xs space-y-1.5">
                               <div className="font-medium text-foreground flex items-center gap-1.5">
                                 <List className="size-3 text-purple-500" />
-                                <span className="font-semibold">{list.title}</span>
+                                <span className="font-semibold">{list.name || "N/A"}</span>
                               </div>
-                              <div className="text-muted-foreground flex items-center gap-1.5">
-                                <User className="size-3" />
-                                <span>by {list.createdBy.name}</span>
-                              </div>
+                              {list.createdBy && (
+                                <div className="text-muted-foreground flex items-center gap-1.5">
+                                  <User className="size-3" />
+                                  <span>by {list.createdBy.fullName || list.createdBy.username || "N/A"}</span>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -321,24 +327,30 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
                                 Events ({dayItems.events.length})
                               </div>
                               {dayItems.events.map((event) => (
-                                <div key={event.id} className="p-2 rounded-lg border space-y-1">
-                                  <div className="font-medium text-sm">{event.title}</div>
+                                <div key={event._id} className="p-2 rounded-lg border space-y-1">
+                                  <div className="font-medium text-sm">{event.title || "N/A"}</div>
                                   {event.description && (
                                     <p className="text-xs text-muted-foreground">{event.description}</p>
                                   )}
                                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="size-3" />
-                                      <span>{event.time}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="size-3" />
-                                      <span>{event.location}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <User className="size-3" />
-                                      <span>by {event.createdBy.name}</span>
-                                    </div>
+                                    {event.startDate && (
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="size-3" />
+                                        <span>{formatDate(event.startDate)}</span>
+                                      </div>
+                                    )}
+                                    {event.location && (
+                                      <div className="flex items-center gap-1">
+                                        <MapPin className="size-3" />
+                                        <span>{event.location}</span>
+                                      </div>
+                                    )}
+                                    {event.createdBy && (
+                                      <div className="flex items-center gap-1">
+                                        <User className="size-3" />
+                                        <span>by {event.createdBy.fullName || event.createdBy.username || "N/A"}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -351,24 +363,30 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
                                 Meals ({dayItems.meals.length})
                               </div>
                               {dayItems.meals.map((meal) => (
-                                <div key={meal.id} className="p-2 rounded-lg border space-y-1">
-                                  <div className="font-medium text-sm">{meal.name}</div>
+                                <div key={meal._id} className="p-2 rounded-lg border space-y-1">
+                                  <div className="font-medium text-sm">{meal.title || "N/A"}</div>
                                   {meal.description && (
                                     <p className="text-xs text-muted-foreground">{meal.description}</p>
                                   )}
                                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="size-3" />
-                                      <span>{meal.time}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Utensils className="size-3" />
-                                      <span>{meal.type}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <User className="size-3" />
-                                      <span>by {meal.createdBy.name}</span>
-                                    </div>
+                                    {meal.time && (
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="size-3" />
+                                        <span>{meal.time}</span>
+                                      </div>
+                                    )}
+                                    {meal.type && (
+                                      <div className="flex items-center gap-1">
+                                        <Utensils className="size-3" />
+                                        <span className="capitalize">{meal.type}</span>
+                                      </div>
+                                    )}
+                                    {meal.createdBy && (
+                                      <div className="flex items-center gap-1">
+                                        <User className="size-3" />
+                                        <span>by {meal.createdBy.fullName || meal.createdBy.username || "N/A"}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -381,15 +399,17 @@ export default function FamilyCalendarTab({ events = [], meals = [], lists = [] 
                                 Lists ({dayItems.lists.length})
                               </div>
                               {dayItems.lists.map((list) => (
-                                <div key={list.id} className="p-2 rounded-lg border space-y-1">
-                                  <div className="font-medium text-sm">{list.title}</div>
+                                <div key={list._id} className="p-2 rounded-lg border space-y-1">
+                                  <div className="font-medium text-sm">{list.name || "N/A"}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {list.items?.length || 0} {list.items?.length === 1 ? "item" : "items"}
                                   </div>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <User className="size-3" />
-                                    <span>by {list.createdBy.name}</span>
-                                  </div>
+                                  {list.createdBy && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <User className="size-3" />
+                                      <span>by {list.createdBy.fullName || list.createdBy.username || "N/A"}</span>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

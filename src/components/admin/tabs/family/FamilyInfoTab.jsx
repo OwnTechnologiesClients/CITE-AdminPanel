@@ -3,10 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Users, Calendar, ClipboardList } from "lucide-react";
+import { Users, Calendar, ClipboardList, Mail, KeyRound } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
-export default function FamilyInfoTab({ family }) {
+export default function FamilyInfoTab({ family, stats, members = [], eventsCount = 0, mealsCount = 0, recipesCount = 0, listsCount = 0 }) {
+  const activeMembers = members.filter(m => m.status === 'active');
+  const parents = activeMembers.filter(m => ['parent', 'guardian'].includes(m.role));
+  const kids = activeMembers.filter(m => m.role === 'child');
+  const totalMembers = activeMembers.length;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-3">
@@ -16,13 +21,21 @@ export default function FamilyInfoTab({ family }) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-2">{family.name}</h2>
-              <div className="flex items-center gap-4">
-                <Badge variant={family.status === "active" ? "default" : "outline"}>
-                  {family.status}
+              <h2 className="text-2xl font-semibold mb-2">{family.name || "N/A"}</h2>
+              <div className="flex items-center gap-4 flex-wrap">
+                <Badge variant={family.status === 1 ? "default" : "outline"}>
+                  {family.status === 1 ? "active" : "inactive"}
                 </Badge>
+                {family.familyCode && (
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="size-4 text-muted-foreground" />
+                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                      {family.familyCode}
+                    </code>
+                  </div>
+                )}
                 <span className="text-sm text-muted-foreground">
-                  Created {formatDate(family.createdDate)}
+                  Created {formatDate(family.createdAt)}
                 </span>
               </div>
             </div>
@@ -34,42 +47,63 @@ export default function FamilyInfoTab({ family }) {
                 <Users className="size-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Total Members</p>
-                  <p className="text-2xl font-bold">{family.members}</p>
+                  <p className="text-2xl font-bold">{totalMembers}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
                 <ClipboardList className="size-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Events</p>
-                  <p className="text-2xl font-bold">{family.events.length}</p>
+                  <p className="text-2xl font-bold">{eventsCount}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
-                <Calendar className="size-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Activity</p>
-                  <p className="text-lg font-semibold">
-                    {formatDate(family.lastActivity)}
-                  </p>
+              {stats?.lastActivity && (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
+                  <Calendar className="size-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Last Activity</p>
+                    <p className="text-lg font-semibold">
+                      {formatDate(stats.lastActivity)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <Separator />
 
             <div>
               <h3 className="font-semibold mb-3">Family Members</h3>
-              <div className="space-y-2">
-                {family.membersList.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-muted-foreground">{member.email}</p>
+              {activeMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">No active members found</p>
+              ) : (
+                <div className="space-y-2">
+                  {activeMembers.map((member) => (
+                    <div key={member._id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {member.userId?.fullName || member.userId?.username || "N/A"}
+                        </p>
+                        {member.userId?.email && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Mail className="size-3 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">{member.userId.email}</p>
+                          </div>
+                        )}
+                        {member.isPrimary && (
+                          <Badge variant="default" className="mt-1 text-xs">Primary</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{member.role || "N/A"}</Badge>
+                        <Badge variant={member.status === 'active' ? "default" : "secondary"}>
+                          {member.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant="outline">{member.role}</Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -82,20 +116,30 @@ export default function FamilyInfoTab({ family }) {
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
                 <p className="text-sm text-muted-foreground leading-tight mb-1">Parents</p>
-                <p className="text-2xl font-bold leading-tight">{family.parents}</p>
+                <p className="text-2xl font-bold leading-tight">{parents.length}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground leading-tight mb-1">Kids</p>
-                <p className="text-2xl font-bold leading-tight">{family.kids}</p>
+                <p className="text-2xl font-bold leading-tight">{kids.length}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground leading-tight mb-1">Meals</p>
-                <p className="text-2xl font-bold leading-tight">{family.meals.length}</p>
+                <p className="text-2xl font-bold leading-tight">{mealsCount}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground leading-tight mb-1">Lists</p>
-                <p className="text-2xl font-bold leading-tight">{family.lists.length}</p>
+                <p className="text-2xl font-bold leading-tight">{listsCount}</p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground leading-tight mb-1">Recipes</p>
+                <p className="text-2xl font-bold leading-tight">{recipesCount}</p>
+              </div>
+              {stats && (
+                <div>
+                  <p className="text-sm text-muted-foreground leading-tight mb-1">Total</p>
+                  <p className="text-2xl font-bold leading-tight">{stats.totalMembers || totalMembers}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
