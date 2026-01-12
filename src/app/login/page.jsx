@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Mail, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { login } from "@/lib/api/auth";
+import { login, isAuthenticated, verifyToken } from "@/lib/api/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
@@ -18,6 +19,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Check if already authenticated on mount
+  useEffect(() => {
+    async function checkAuth() {
+      if (isAuthenticated()) {
+        const isValid = await verifyToken();
+        if (isValid) {
+          router.push("/admin");
+          return;
+        }
+      }
+      setIsChecking(false);
+    }
+    checkAuth();
+  }, [router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,6 +91,17 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">

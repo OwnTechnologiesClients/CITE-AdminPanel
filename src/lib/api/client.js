@@ -46,6 +46,17 @@ export async function apiRequest(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        // Clear invalid token
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+        }
+      }
       // Handle API error responses
       const errorMessage = data.message || `HTTP error! status: ${response.status}`;
       throw new Error(errorMessage);

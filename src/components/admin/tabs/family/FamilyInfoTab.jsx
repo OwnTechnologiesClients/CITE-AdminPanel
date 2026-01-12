@@ -3,8 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Users, Calendar, ClipboardList, Mail, KeyRound } from "lucide-react";
+import { Users, Calendar, ClipboardList, Mail } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import Link from "next/link";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function FamilyInfoTab({ family, stats, members = [], eventsCount = 0, mealsCount = 0, recipesCount = 0, listsCount = 0 }) {
   const activeMembers = members.filter(m => m.status === 'active');
@@ -26,14 +28,6 @@ export default function FamilyInfoTab({ family, stats, members = [], eventsCount
                 <Badge variant={family.status === 1 ? "default" : "outline"}>
                   {family.status === 1 ? "active" : "inactive"}
                 </Badge>
-                {family.familyCode && (
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="size-4 text-muted-foreground" />
-                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                      {family.familyCode}
-                    </code>
-                  </div>
-                )}
                 <span className="text-sm text-muted-foreground">
                   Created {formatDate(family.createdAt)}
                 </span>
@@ -78,30 +72,61 @@ export default function FamilyInfoTab({ family, stats, members = [], eventsCount
                 <p className="text-sm text-muted-foreground py-4">No active members found</p>
               ) : (
                 <div className="space-y-2">
-                  {activeMembers.map((member) => (
-                    <div key={member._id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {member.userId?.fullName || member.userId?.username || "N/A"}
-                        </p>
-                        {member.userId?.email && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Mail className="size-3 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">{member.userId.email}</p>
+                  {activeMembers.map((member) => {
+                    const memberUserId = member.userId?._id || member.userId?.id || member.userId;
+                    const memberName = member.userId?.fullName || member.userId?.username || "N/A";
+                    const memberEmail = member.userId?.email;
+                    
+                    const getInitials = (name) => {
+                      if (!name) return "??";
+                      return name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2);
+                    };
+
+                    const memberCard = (
+                      <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Avatar className="size-10">
+                            <AvatarFallback className="text-sm">{getInitials(memberName)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              {memberName}
+                            </p>
+                            {memberEmail && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Mail className="size-3 text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground">{memberEmail}</p>
+                              </div>
+                            )}
+                            {member.isPrimary && (
+                              <Badge variant="default" className="mt-1 text-xs">Primary</Badge>
+                            )}
                           </div>
-                        )}
-                        {member.isPrimary && (
-                          <Badge variant="default" className="mt-1 text-xs">Primary</Badge>
-                        )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{member.role || "N/A"}</Badge>
+                          <Badge variant={member.status === 'active' ? "default" : "secondary"}>
+                            {member.status}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{member.role || "N/A"}</Badge>
-                        <Badge variant={member.status === 'active' ? "default" : "secondary"}>
-                          {member.status}
-                        </Badge>
+                    );
+
+                    return memberUserId ? (
+                      <Link key={member._id} href={`/admin/users/${memberUserId}`}>
+                        {memberCard}
+                      </Link>
+                    ) : (
+                      <div key={member._id}>
+                        {memberCard}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

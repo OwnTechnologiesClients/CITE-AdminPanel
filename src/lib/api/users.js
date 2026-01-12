@@ -1,4 +1,4 @@
-import { apiGet } from './client';
+import { apiGet, apiPut } from './client';
 
 /**
  * Get all users (admin only)
@@ -22,6 +22,19 @@ export async function getUserById(userId) {
     return response.data;
   } catch (error) {
     console.error('Error fetching user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update user by ID
+ */
+export async function updateUser(userId, userData) {
+  try {
+    const response = await apiPut(`/users/list/${userId}`, userData);
+    return response.data || response;
+  } catch (error) {
+    console.error('Error updating user:', error);
     throw error;
   }
 }

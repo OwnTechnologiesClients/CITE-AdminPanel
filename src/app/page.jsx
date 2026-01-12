@@ -1,5 +1,27 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/api/auth";
 
 export default function Home() {
-  redirect("/admin");
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if authenticated, then redirect accordingly
+    if (isAuthenticated()) {
+      router.push("/admin");
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+        <p className="mt-4 text-muted-foreground">Redirecting...</p>
+      </div>
+    </div>
+  );
 }

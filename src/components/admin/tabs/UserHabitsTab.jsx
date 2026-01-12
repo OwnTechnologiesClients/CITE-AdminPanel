@@ -22,9 +22,10 @@ export default function UserHabitsTab({ userId, habits }) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleViewHabit = (habit) => {
+    const habitId = habit._id || habit.id;
     if (habit.locationTracking) {
       // For location-tracked habits, navigate to sessions page
-      router.push(`/admin/adults/users/${userId}/habits/${habit.id}/sessions`);
+      router.push(`/admin/adults/users/${userId}/habits/${habitId}/sessions`);
     } else {
       // For non-location habits, show modal
       setSelectedHabit(habit);
@@ -55,7 +56,7 @@ export default function UserHabitsTab({ userId, habits }) {
             </TableHeader>
             <TableBody>
               {habits.map((habit) => (
-                <TableRow key={habit.id}>
+                <TableRow key={habit._id || habit.id}>
                   <TableCell className="font-medium">{habit.name}</TableCell>
                   <TableCell>
                     {habit.locationTracking ? (
@@ -70,15 +71,15 @@ export default function UserHabitsTab({ userId, habits }) {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Target className="size-4 text-muted-foreground" />
-                      {habit.streak} days
+                      {habit.streak || 0} days
                     </div>
                   </TableCell>
                   <TableCell>
-                    {habit.completedSessions} / {habit.totalSessions}
+                    {habit.completedSessions || 0} / {habit.totalSessions || 0}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={habit.status === "active" ? "default" : "outline"}>
-                      {habit.status}
+                    <Badge variant={habit.status === 1 && habit.isActive ? "default" : "outline"}>
+                      {habit.status === 1 && habit.isActive ? "active" : "inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

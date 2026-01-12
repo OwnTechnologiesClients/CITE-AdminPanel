@@ -52,7 +52,6 @@ const commonMenuItems = [
     hasSubmenu: true,
     submenu: [
       { title: "View All Users", href: "/admin/users", icon: List },
-      { title: "Add New User", href: "/admin/users/add", icon: Plus },
     ],
   },
   {
@@ -83,10 +82,10 @@ const commonMenuItems = [
     href: "/admin/analytics",
     hasSubmenu: true,
     submenu: [
-      { title: "Parents & Kids Analytics", href: "", icon: List },
-      { title: "Adults Analytics", href: "", icon: Plus },
-      { title: "Families Analytics", href: "", icon: Plus },
-      { title: "Tracker Analytics", href: "", icon: Plus },
+      { title: "Parents & Kids Analytics", href: "/admin/parents-kids", icon: List },
+      { title: "Adults Analytics", href: "/admin/adults", icon: Plus },
+      { title: "Families Analytics", href: "/admin/families/dashboard", icon: Plus },
+      { title: "Tracker Analytics", href: "/admin/tracker/analytics", icon: Plus },
     ],
   },
 ];
@@ -108,6 +107,12 @@ const parentsKidsMenuItems = [
     title: "Parents",
     icon: UserCheck,
     href: "/admin/parents-kids/parents",
+    hasSubmenu: false,
+  },
+  {
+    title: "Coin Transactions",
+    icon: Gift,
+    href: "/admin/parents-kids/coins/transactions",
     hasSubmenu: false,
   },
 ];
@@ -167,6 +172,18 @@ const trackerMenuItems = [
     title: "Activity Tracker",
     icon: Activity,
     href: "/admin/tracker",
+    hasSubmenu: false,
+  },
+  {
+    title: "Steps Tracking",
+    icon: Activity,
+    href: "/admin/tracker/steps",
+    hasSubmenu: false,
+  },
+  {
+    title: "Tracker Analytics",
+    icon: BarChart,
+    href: "/admin/tracker/analytics",
     hasSubmenu: false,
   },
 ];

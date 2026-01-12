@@ -53,9 +53,22 @@ export default function ParentsTable() {
         // Fetch all parents
         const parentsData = await getParents();
         
+        // Filter out admin users (safety measure)
+        const nonAdminParents = parentsData.filter(parent => {
+          if (parent.userType === 'admin') return false;
+          if (parent.roles && Array.isArray(parent.roles)) {
+            const hasAdminRole = parent.roles.some(role => {
+              const roleName = typeof role === 'object' ? role.name : role;
+              return roleName === 'admin';
+            });
+            if (hasAdminRole) return false;
+          }
+          return true;
+        });
+        
         // Fetch additional data for each parent (kids, tasks, rewards)
         const parentsWithStats = await Promise.all(
-          parentsData.map(async (parent) => {
+          nonAdminParents.map(async (parent) => {
             try {
               const [kids, tasks, rewards] = await Promise.all([
                 getKids({ parentId: parent._id }),

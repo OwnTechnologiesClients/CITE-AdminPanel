@@ -246,6 +246,8 @@ export default function ViewTaskPage() {
                     <TableRow>
                       <TableHead>Completed At</TableHead>
                       <TableHead>Kid</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Coins Earned</TableHead>
                       <TableHead>Photo Proof</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -259,6 +261,23 @@ export default function ViewTaskPage() {
                           </div>
                         </TableCell>
                         <TableCell>{completion.kidId?.name || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            completion.completionStatus === "completed_late" 
+                              ? "destructive" 
+                              : "default"
+                          }>
+                            {completion.completionStatus === "completed_late" 
+                              ? "Completed Late" 
+                              : "Completed"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Coins className="size-4 text-yellow-600" />
+                            {completion.coinsEarned || 0}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {completion.photoProofPath ? (
                             <div className="relative group">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { 
   UsersRound, 
   ClipboardList, 
@@ -11,47 +12,92 @@ import {
 } from "lucide-react";
 import StatCard from "@/components/admin/cards/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { sampleFamily } from "@/lib/sampleData/families";
-
-// Mock data - in real app, fetch from API
-const mockFamilies = [
-  sampleFamily,
-  {
-    id: 2,
-    name: "Smith Family",
-    members: 3,
-    parents: 2,
-    kids: 1,
-    status: "active",
-    createdDate: "2024-02-20",
-    lastActivity: "2024-12-14",
-    events: [],
-    meals: [],
-    lists: [],
-  },
-  {
-    id: 3,
-    name: "Johnson Family",
-    members: 5,
-    parents: 2,
-    kids: 3,
-    status: "active",
-    createdDate: "2024-01-10",
-    lastActivity: "2024-12-15",
-    events: [],
-    meals: [],
-    lists: [],
-  },
-];
+import { getFamiliesDashboardStats } from "@/lib/api/stats";
+import { getFamilies } from "@/lib/api/families";
+import { getFamilyEvents, getFamilyMeals, getFamilyLists } from "@/lib/api/families";
 
 export default function FamiliesDashboard() {
-  // Calculate stats from mock data
-  const totalFamilies = mockFamilies.length;
-  const totalMembers = mockFamilies.reduce((sum, f) => sum + f.members, 0);
-  const totalEvents = mockFamilies.reduce((sum, f) => sum + (f.events?.length || 0), 0);
-  const totalMeals = mockFamilies.reduce((sum, f) => sum + (f.meals?.length || 0), 0);
-  const totalLists = mockFamilies.reduce((sum, f) => sum + (f.lists?.length || 0), 0);
-  const activeFamilies = mockFamilies.filter(f => f.status === "active").length;
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const [totalMeals, setTotalMeals] = useState(0);
+  const [totalLists, setTotalLists] = useState(0);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch stats and families
+        const [statsData, families] = await Promise.all([
+          getFamiliesDashboardStats().catch(() => ({ totalFamilies: { value: 0 }, activeFamilies: { value: 0 }, totalMembers: { value: 0 } })),
+          getFamilies().catch(() => []),
+        ]);
+
+        setStats(statsData);
+
+        // Fetch events, meals, and lists for all families
+        const eventPromises = families.map(family => 
+          getFamilyEvents(family._id).catch(() => [])
+        );
+        const mealPromises = families.map(family => 
+          getFamilyMeals(family._id).catch(() => [])
+        );
+        const listPromises = families.map(family => 
+          getFamilyLists(family._id).catch(() => [])
+        );
+
+        const [eventsArrays, mealsArrays, listsArrays] = await Promise.all([
+          Promise.all(eventPromises),
+          Promise.all(mealPromises),
+          Promise.all(listPromises),
+        ]);
+
+        const totalEventsCount = eventsArrays.reduce((sum, events) => sum + events.length, 0);
+        const totalMealsCount = mealsArrays.reduce((sum, meals) => sum + meals.length, 0);
+        const totalListsCount = listsArrays.reduce((sum, lists) => sum + lists.length, 0);
+
+        setTotalEvents(totalEventsCount);
+        setTotalMeals(totalMealsCount);
+        setTotalLists(totalListsCount);
+      } catch (err) {
+        console.error("Error fetching families dashboard stats:", err);
+        setError(err.message || "Failed to load statistics");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Families Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Families Dashboard</h1>
+          <p className="text-muted-foreground mt-2 text-destructive">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalFamilies = stats?.totalFamilies?.value || 0;
+  const activeFamilies = stats?.activeFamilies?.value || 0;
+  const totalMembers = stats?.totalMembers?.value || 0;
 
   return (
     <div className="space-y-6">

@@ -126,3 +126,42 @@ export async function getWeightStatistics() {
   }
 }
 
+/**
+ * Get today's steps
+ */
+export async function getTodaySteps() {
+  try {
+    const response = await apiGet('/tracker/steps/today');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching today steps:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get week's steps
+ */
+export async function getWeekSteps() {
+  try {
+    const response = await apiGet('/tracker/steps/week');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching week steps:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get month's steps
+ */
+export async function getMonthSteps() {
+  try {
+    const response = await apiGet('/tracker/steps/month');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching month steps:', error);
+    throw error;
+  }
+}
+

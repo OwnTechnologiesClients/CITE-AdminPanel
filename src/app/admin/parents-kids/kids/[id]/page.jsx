@@ -128,7 +128,8 @@ export default function ViewKidPage() {
           id: kidData._id,
           name: kidData.name,
           age: age,
-          email: kidData.userId?.email || "N/A",
+          email: kidData.userId?.email || "No account (uses invite code login)",
+          hasUserAccount: !!kidData.userId, // Track if kid has user account
           parent: {
             _id: parentData?._id || kidData.parentId?._id,
             id: parentData?._id || kidData.parentId?._id,

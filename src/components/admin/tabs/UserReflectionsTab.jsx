@@ -33,36 +33,46 @@ export default function UserReflectionsTab({ reflections }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reflections.map((reflection) => (
-              <TableRow key={reflection.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
+            {reflections.map((reflection) => {
+              const feelings = Array.isArray(reflection.feelings) 
+                ? reflection.feelings.join(", ") 
+                : reflection.feelings || "N/A";
+              const reflectionDate = reflection.date || reflection.createdAt;
+              const reflectionTime = reflection.time || (reflectionDate ? new Date(reflectionDate).toLocaleTimeString() : "");
+              
+              return (
+                <TableRow key={reflection._id || reflection.id}>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="size-4 text-muted-foreground" />
+                        <span>{formatDate(reflectionDate)}</span>
+                      </div>
+                      {reflectionTime && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="size-3" />
+                          <span>{reflectionTime}</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
-                      <Calendar className="size-4 text-muted-foreground" />
-                      <span>{formatDate(reflection.date)}</span>
+                      <Heart className="size-4 text-muted-foreground" />
+                      <span className="font-medium">{feelings}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="size-3" />
-                      <span>{reflection.time}</span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Heart className="size-4 text-muted-foreground" />
-                    <span className="font-medium">{reflection.feeling}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={reflection.mood === "positive" ? "default" : "secondary"}>
-                    {reflection.mood}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-md">
-                  <p className="truncate">{reflection.notes}</p>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={reflection.mood === "positive" || reflection.mood === "great" || reflection.mood === "good" ? "default" : "secondary"}>
+                      {reflection.mood || "N/A"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-md">
+                    <p className="truncate">{reflection.notes || "—"}</p>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
