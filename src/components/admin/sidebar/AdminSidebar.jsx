@@ -19,6 +19,7 @@ import {
   Shield,
   KeyRound,
   Activity,
+  Trophy,
 } from "lucide-react";
 import {
   Sidebar,
@@ -115,6 +116,12 @@ const parentsKidsMenuItems = [
     href: "/admin/parents-kids/coins/transactions",
     hasSubmenu: false,
   },
+  {
+    title: "Challenges",
+    icon: Trophy,
+    href: "/admin/parents-kids/challenges",
+    hasSubmenu: false,
+  },
 ];
 
 const adultsMenuItems = [
@@ -163,6 +170,12 @@ const familiesMenuItems = [
     title: "Family List",
     icon: List,
     href: "/admin/families/list",
+    hasSubmenu: false,
+  },
+  {
+    title: "Challenges",
+    icon: Trophy,
+    href: "/admin/families/challenges",
     hasSubmenu: false,
   },
 ];
