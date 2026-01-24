@@ -98,6 +98,7 @@ export default function ActivitySessionDetailPage() {
       running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
       walking: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
       cycling: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+      steps: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
       other: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
     };
     return (
@@ -196,6 +197,40 @@ export default function ActivitySessionDetailPage() {
         </div>
       </div>
 
+      {/* Challenge Context */}
+      {session.source === 'challenge' && (session.challengeId || session.dayNumber) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Challenge Context</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {session.challengeId && (
+                <div>
+                  <div className="text-sm text-muted-foreground">Challenge ID</div>
+                  <div className="font-medium font-mono text-sm">{session.challengeId}</div>
+                </div>
+              )}
+              {session.dayNumber && (
+                <div>
+                  <div className="text-sm text-muted-foreground">Day Number</div>
+                  <div className="font-medium">Day {session.dayNumber}</div>
+                </div>
+              )}
+            </div>
+            {session.challengeId && (
+              <div className="mt-4">
+                <Link href={`/admin/adults/adult-challenges/${session.challengeId}`}>
+                  <Button variant="outline" size="sm">
+                    View Challenge
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Route Map */}
       {session.polyline && session.polyline.length > 0 && (
         <Card>
@@ -216,17 +251,30 @@ export default function ActivitySessionDetailPage() {
         </Card>
       )}
 
-      {/* Statistics Grid */}
+      {/* Statistics Grid - Activity-specific metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Distance</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatDistance(session.distance)}</div>
-          </CardContent>
-        </Card>
+        {/* Primary metric: Steps for steps/walking, Distance for running/cycling */}
+        {(session.activityType === 'steps' || session.activityType === 'walking') ? (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Steps</CardTitle>
+              <Footprints className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{session.steps || 0}</div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Distance</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatDistance(session.distance)}</div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Duration</CardTitle>
@@ -245,15 +293,30 @@ export default function ActivitySessionDetailPage() {
             <div className="text-2xl font-bold">{session.calories || 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Steps</CardTitle>
-            <Footprints className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{session.steps || 0}</div>
-          </CardContent>
-        </Card>
+        {/* Show distance for steps/walking, or steps for running/cycling as secondary metric */}
+        {(session.activityType === 'steps' || session.activityType === 'walking') ? (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Distance</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatDistance(session.distance)}</div>
+            </CardContent>
+          </Card>
+        ) : (
+          session.steps > 0 && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Steps</CardTitle>
+                <Footprints className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{session.steps || 0}</div>
+              </CardContent>
+            </Card>
+          )
+        )}
       </div>
 
       {/* Performance Metrics */}
@@ -271,13 +334,19 @@ export default function ActivitySessionDetailPage() {
               <span className="font-semibold">{formatSpeed(session.averageSpeed)}</span>
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Average Pace</span>
-              </div>
-              <span className="font-semibold">{formatPace(session.averagePace)}</span>
-            </div>
+            {/* Hide pace for cycling and steps activities */}
+            {(session.activityType !== 'cycling' && session.activityType !== 'steps') && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Average Pace</span>
+                  </div>
+                  <span className="font-semibold">{formatPace(session.averagePace)}</span>
+                </div>
+                <Separator />
+              </>
+            )}
             <Separator />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

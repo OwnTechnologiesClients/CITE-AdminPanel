@@ -34,6 +34,7 @@ export default function TrackerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activityTypeFilter, setActivityTypeFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [pagination, setPagination] = useState({});
@@ -49,6 +50,7 @@ export default function TrackerPage() {
           limit: itemsPerPage,
           ...(statusFilter !== "all" && { status: statusFilter }),
           ...(activityTypeFilter !== "all" && { activityType: activityTypeFilter }),
+          ...(sourceFilter !== "all" && { source: sourceFilter }),
         };
 
         const [sessionsData, statsData] = await Promise.all([
@@ -68,7 +70,7 @@ export default function TrackerPage() {
     }
 
     fetchData();
-  }, [currentPage, statusFilter, activityTypeFilter]);
+  }, [currentPage, statusFilter, activityTypeFilter, sourceFilter]);
 
   const filteredSessions = sessions.filter((session) => {
     const matchesSearch =
@@ -96,6 +98,7 @@ export default function TrackerPage() {
       running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
       walking: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
       cycling: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+      steps: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
       other: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
     };
     return (
@@ -246,6 +249,16 @@ export default function TrackerPage() {
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="challenge">Challenge</SelectItem>
+                <SelectItem value="standalone">Standalone</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -269,6 +282,7 @@ export default function TrackerPage() {
                 <TableRow>
                   <TableHead>Session ID</TableHead>
                   <TableHead>Activity Type</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Start Time</TableHead>
                   <TableHead>Duration</TableHead>
@@ -284,6 +298,22 @@ export default function TrackerPage() {
                       {session.sessionId?.substring(0, 8)}...
                     </TableCell>
                     <TableCell>{getActivityTypeBadge(session.activityType)}</TableCell>
+                    <TableCell>
+                      {session.source === 'challenge' ? (
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="outline" className="text-xs">
+                            Challenge
+                          </Badge>
+                          {session.dayNumber && (
+                            <span className="text-xs text-muted-foreground">
+                              Day {session.dayNumber}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline">Standalone</Badge>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(session.status)}</TableCell>
                     <TableCell>
                       {session.startTime ? formatDate(session.startTime) : "N/A"}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getChallengeById } from "@/lib/api/challenges";
 import { formatDate } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -18,6 +19,7 @@ export default function FamilyChallengeDetailPage() {
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     async function fetchChallenge() {
@@ -337,18 +339,25 @@ export default function FamilyChallengeDetailPage() {
                       <div>
                         <p className="text-xs font-medium mb-2">Photos ({proof.photos.length})</p>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {proof.photos.map((photo, photoIndex) => (
-                            <div key={photoIndex} className="aspect-square border rounded overflow-hidden">
-                              <img
-                                src={photo.startsWith('http') ? photo : `http://localhost:5000${photo}`}
-                                alt={`Proof ${photoIndex + 1}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/placeholder-image.png';
-                                }}
-                              />
-                            </div>
-                          ))}
+                          {proof.photos.map((photo, photoIndex) => {
+                            const imageUrl = photo.startsWith('http') ? photo : `http://localhost:5000${photo}`;
+                            return (
+                              <div 
+                                key={photoIndex} 
+                                className="aspect-square border rounded overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setSelectedImage(imageUrl)}
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt={`Proof ${photoIndex + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.src = '/placeholder-image.png';
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -390,6 +399,25 @@ export default function FamilyChallengeDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Full Screen Image Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black border-none">
+          <DialogTitle className="sr-only">Proof Image - Full Size View</DialogTitle>
+          {selectedImage && (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <img
+                src={selectedImage}
+                alt="Full size proof"
+                className="max-w-full max-h-[95vh] object-contain"
+                onError={(e) => {
+                  e.target.src = '/placeholder-image.png';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -11,13 +11,20 @@ export function getAuthToken() {
 
 /**
  * Base fetch function with authentication and error handling
+ * Automatically handles both JSON and FormData requests
  */
 export async function apiRequest(endpoint, options = {}) {
   const token = getAuthToken();
   
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  // Check if body is FormData
+  const isFormData = options.body instanceof FormData;
+  
+  const defaultHeaders = {};
+  
+  // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
+  if (!isFormData) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -81,22 +88,45 @@ export async function apiGet(endpoint, params = {}) {
 
 /**
  * POST request helper
+ * Automatically handles both JSON objects and FormData
  */
 export async function apiPost(endpoint, body = {}) {
+  // If body is FormData, pass it directly; otherwise stringify as JSON
+  const requestBody = body instanceof FormData ? body : JSON.stringify(body);
+  
   const { data } = await apiRequest(endpoint, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: requestBody,
   });
   return data;
 }
 
 /**
  * PUT request helper
+ * Automatically handles both JSON objects and FormData
  */
 export async function apiPut(endpoint, body = {}) {
+  // If body is FormData, pass it directly; otherwise stringify as JSON
+  const requestBody = body instanceof FormData ? body : JSON.stringify(body);
+  
   const { data } = await apiRequest(endpoint, {
     method: 'PUT',
-    body: JSON.stringify(body),
+    body: requestBody,
+  });
+  return data;
+}
+
+/**
+ * PATCH request helper
+ * Automatically handles both JSON objects and FormData
+ */
+export async function apiPatch(endpoint, body = {}) {
+  // If body is FormData, pass it directly; otherwise stringify as JSON
+  const requestBody = body instanceof FormData ? body : JSON.stringify(body);
+
+  const { data } = await apiRequest(endpoint, {
+    method: 'PATCH',
+    body: requestBody,
   });
   return data;
 }
@@ -107,6 +137,24 @@ export async function apiPut(endpoint, body = {}) {
 export async function apiDelete(endpoint) {
   const { data } = await apiRequest(endpoint, { method: 'DELETE' });
   return data;
+}
+
+/**
+ * POST request with FormData for file uploads
+ * @deprecated Use apiPost() instead - it now automatically handles FormData
+ * Kept for backward compatibility
+ */
+export async function apiPostFormData(endpoint, formData) {
+  return apiPost(endpoint, formData);
+}
+
+/**
+ * PUT request with FormData for file uploads
+ * @deprecated Use apiPut() instead - it now automatically handles FormData
+ * Kept for backward compatibility
+ */
+export async function apiPutFormData(endpoint, formData) {
+  return apiPut(endpoint, formData);
 }
 
 

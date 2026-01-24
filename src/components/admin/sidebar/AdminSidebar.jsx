@@ -20,6 +20,7 @@ import {
   KeyRound,
   Activity,
   Trophy,
+  MessageCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,12 @@ const commonMenuItems = [
     title: "Permissions",
     icon: KeyRound,
     href: "/admin/permissions",
+    hasSubmenu: false,
+  },
+  {
+    title: "Support",
+    icon: MessageCircle,
+    href: "/admin/support",
     hasSubmenu: false,
   },
   {
@@ -148,13 +155,13 @@ const adultsMenuItems = [
     ],
   },
   {
-    title: "Reward Task",
+    title: "Adult Challenges",
     icon: Gift,
-    href: "/admin/adults/reward-tasks",
+    href: "/admin/adults/adult-challenges",
     hasSubmenu: true,
     submenu: [
-      { title: "View All Tasks", href: "/admin/adults/reward-tasks", icon: List },
-      { title: "Add New Task", href: "/admin/adults/reward-tasks/add", icon: Plus },
+      { title: "View All Challenges", href: "/admin/adults/adult-challenges", icon: List },
+      { title: "Add New Challenge", href: "/admin/adults/adult-challenges/add", icon: Plus },
     ],
   },
 ];

@@ -1,137 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { MapPin, Navigation } from "lucide-react";
 
 export default function RouteMap({ polyline, startLat, startLong, endLat, endLong, gpsPoints }) {
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-
-  useEffect(() => {
-    if (!mapRef.current || !polyline || polyline.length === 0) return;
-
-    // Initialize map using Leaflet (you can replace with Google Maps, Mapbox, etc.)
-    const initMap = async () => {
-      try {
-        // Dynamic import to avoid SSR issues
-        const L = await import("leaflet");
-        await import("leaflet/dist/leaflet.css");
-
-        // Remove existing map if any
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-        }
-
-        // Calculate bounds
-        const latlngs = polyline.map((coord) => [coord[0], coord[1]]);
-        const bounds = L.latLngBounds(latlngs);
-
-        // Create map
-        const map = L.map(mapRef.current, {
-          zoomControl: true,
-        }).fitBounds(bounds);
-
-        // Add tile layer
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(map);
-
-        // Add route polyline
-        const routePolyline = L.polyline(latlngs, {
-          color: "#3b82f6",
-          weight: 4,
-          opacity: 0.8,
-        }).addTo(map);
-
-        // Add start marker
-        if (startLat && startLong) {
-          L.marker([startLat, startLong], {
-            icon: L.divIcon({
-              className: "custom-marker",
-              html: `<div style="
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background-color: #10b981;
-                border: 3px solid white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-              "></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            }),
-          })
-            .addTo(map)
-            .bindPopup("Start");
-        }
-
-        // Add end marker
-        if (endLat && endLong) {
-          L.marker([endLat, endLong], {
-            icon: L.divIcon({
-              className: "custom-marker",
-              html: `<div style="
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background-color: #ef4444;
-                border: 3px solid white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-              "></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            }),
-          })
-            .addTo(map)
-            .bindPopup("End");
-        }
-
-        // Optional: Add speed-colored segments if GPS points available
-        if (gpsPoints && gpsPoints.length > 1) {
-          for (let i = 1; i < gpsPoints.length; i++) {
-            const prev = gpsPoints[i - 1];
-            const curr = gpsPoints[i];
-            const speed = curr.speed || 0;
-
-            // Determine color based on speed
-            let color = "#10b981"; // Green - Low
-            if (speed >= 4.56) {
-              color = "#ef4444"; // Red - High
-            } else if (speed >= 2.34) {
-              color = "#f59e0b"; // Yellow - Moderate
-            }
-
-            L.polyline(
-              [
-                [prev.latitude, prev.longitude],
-                [curr.latitude, curr.longitude],
-              ],
-              {
-                color,
-                weight: 3,
-                opacity: 0.7,
-              }
-            ).addTo(map);
-          }
-        }
-
-        mapInstanceRef.current = map;
-      } catch (error) {
-        console.error("Error initializing map:", error);
-      }
-    };
-
-    initMap();
-
-    // Cleanup
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, [polyline, startLat, startLong, endLat, endLong, gpsPoints]);
-
   if (!polyline || polyline.length === 0) {
     return (
       <div className="w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
@@ -140,12 +11,84 @@ export default function RouteMap({ polyline, startLat, startLong, endLat, endLon
     );
   }
 
+  // Calculate center point for display
+  const centerLat = polyline.length > 0 
+    ? polyline.reduce((sum, coord) => sum + coord[0], 0) / polyline.length
+    : startLat || 0;
+  const centerLng = polyline.length > 0
+    ? polyline.reduce((sum, coord) => sum + coord[1], 0) / polyline.length
+    : startLong || 0;
+
   return (
-    <div
-      ref={mapRef}
-      className="w-full h-[400px] rounded-lg border"
-      style={{ zIndex: 0 }}
-    />
+    <div className="relative w-full h-[400px] bg-muted rounded-lg border overflow-hidden">
+      {/* Placeholder Map */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <Navigation className="size-12 mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Route Map</p>
+          <p className="text-xs text-muted-foreground">
+            Route coordinates: {centerLat.toFixed(4)}, {centerLng.toFixed(4)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Points: {polyline.length}
+          </p>
+        </div>
+      </div>
+
+      {/* Route visualization overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Start marker */}
+        {startLat && startLong && (
+          <div 
+            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: "20%",
+              top: "30%",
+            }}
+          >
+            <div className="bg-green-500 rounded-full p-2 shadow-lg">
+              <MapPin className="size-4 text-white" />
+            </div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs bg-white px-2 py-1 rounded shadow">
+              Start
+            </div>
+          </div>
+        )}
+
+        {/* End marker */}
+        {endLat && endLong && (
+          <div 
+            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: "80%",
+              top: "70%",
+            }}
+          >
+            <div className="bg-red-500 rounded-full p-2 shadow-lg">
+              <MapPin className="size-4 text-white" />
+            </div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs bg-white px-2 py-1 rounded shadow">
+              End
+            </div>
+          </div>
+        )}
+
+        {/* Route path (simplified line) */}
+        <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
+          <polyline
+            points={polyline.map((coord, index) => {
+              const x = 20 + (index / polyline.length) * 60 + "%";
+              const y = 30 + (index / polyline.length) * 40 + "%";
+              return `${x},${y}`;
+            }).join(" ")}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            opacity="0.8"
+          />
+        </svg>
+      </div>
+    </div>
   );
 }
 
