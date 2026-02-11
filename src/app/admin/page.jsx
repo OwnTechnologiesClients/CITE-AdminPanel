@@ -1,16 +1,89 @@
-import { 
-  Users, 
-  UsersRound, 
-  ClipboardList, 
-  Gift, 
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Users,
+  UsersRound,
+  ClipboardList,
+  Gift,
   Calendar,
   TrendingUp,
-  Activity
+  Activity,
 } from "lucide-react";
 import StatCard from "@/components/admin/cards/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAdminDashboardStats } from "@/lib/api/stats";
+import { formatDate } from "@/lib/utils";
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return formatDate(dateStr);
+}
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getAdminDashboardStats();
+        setStats(data);
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
+        setError(err.message || "Failed to load dashboard");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Overview of your family productivity application
+          </p>
+        </div>
+        <div className="text-center py-12 text-muted-foreground">
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Overview of your family productivity application
+          </p>
+        </div>
+        <div className="text-center py-12 text-destructive">{error}</div>
+      </div>
+    );
+  }
+
+  const activeTasksChange = stats?.parentsKidsStats?.activeTasks?.change;
+  const rewardsChange = stats?.parentsKidsStats?.rewardsCreated?.change;
+
   return (
     <div className="space-y-6">
       <div>
@@ -23,35 +96,48 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"
-          value="1,234"
-          change="12.5%"
-          changeType="positive"
+          value={stats?.totalUsers?.toLocaleString() ?? "0"}
           icon={Users}
-          description="Active members across all families"
+          description="Active members across all modules"
         />
         <StatCard
           title="Total Families"
-          value="456"
-          change="8.2%"
+          value={stats?.totalFamilies?.toLocaleString() ?? "0"}
           changeType="positive"
           icon={UsersRound}
           description="Registered family groups"
         />
         <StatCard
           title="Active Tasks"
-          value="2,890"
-          change="5.1%"
-          changeType="positive"
+          value={stats?.activeTasks?.toLocaleString() ?? "0"}
+          change={
+            activeTasksChange != null
+              ? `${Number(activeTasksChange).toFixed(1)}%`
+              : undefined
+          }
+          changeType={
+            activeTasksChange != null && Number(activeTasksChange) >= 0
+              ? "positive"
+              : "negative"
+          }
           icon={ClipboardList}
           description="Tasks in progress or pending"
         />
         <StatCard
-          title="Rewards Redeemed"
-          value="567"
-          change="15.3%"
-          changeType="positive"
+          title="Rewards Created"
+          value={stats?.rewardsCreated?.toLocaleString() ?? "0"}
+          change={
+            rewardsChange != null
+              ? `${Number(rewardsChange).toFixed(1)}%`
+              : undefined
+          }
+          changeType={
+            rewardsChange != null && Number(rewardsChange) >= 0
+              ? "positive"
+              : "negative"
+          }
           icon={Gift}
-          description="This month"
+          description="From last period"
         />
       </div>
 
@@ -66,16 +152,12 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Tasks Completed</span>
-                <span className="text-sm font-semibold">1,234</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Events Created</span>
-                <span className="text-sm font-semibold">89</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Media Uploaded</span>
-                <span className="text-sm font-semibold">3,456</span>
+                <span className="text-sm text-muted-foreground">
+                  Tasks Completed
+                </span>
+                <span className="text-sm font-semibold">
+                  {stats?.tasksCompleted?.toLocaleString() ?? "0"}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -91,16 +173,20 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">New Users (30d)</span>
-                <span className="text-sm font-semibold text-green-600">+156</span>
+                <span className="text-sm text-muted-foreground">
+                  Total Users
+                </span>
+                <span className="text-sm font-semibold">
+                  {stats?.totalUsers?.toLocaleString() ?? "0"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">New Families (30d)</span>
-                <span className="text-sm font-semibold text-green-600">+42</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Engagement Rate</span>
-                <span className="text-sm font-semibold">78.5%</span>
+                <span className="text-sm text-muted-foreground">
+                  Total Families
+                </span>
+                <span className="text-sm font-semibold">
+                  {stats?.totalFamilies?.toLocaleString() ?? "0"}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -115,18 +201,18 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
-              <div>
-                <p className="font-medium">New family registered</p>
-                <p className="text-xs text-muted-foreground">2 hours ago</p>
-              </div>
-              <div>
-                <p className="font-medium">Task completion milestone</p>
-                <p className="text-xs text-muted-foreground">5 hours ago</p>
-              </div>
-              <div>
-                <p className="font-medium">Reward redemption</p>
-                <p className="text-xs text-muted-foreground">1 day ago</p>
-              </div>
+              {stats?.recentActivity?.length ? (
+                stats.recentActivity.map((item) => (
+                  <div key={item.id}>
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatRelativeTime(item.time) ?? "Recently"}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No recent activity yet</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -134,4 +220,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-

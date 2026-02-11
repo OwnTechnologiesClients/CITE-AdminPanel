@@ -148,11 +148,7 @@ const adultsMenuItems = [
     title: "Habits",
     icon: Target,
     href: "/admin/adults/habits",
-    hasSubmenu: true,
-    submenu: [
-      { title: "View All Habits", href: "/admin/adults/habits", icon: List },
-      { title: "Add New Habit", href: "/admin/adults/habits/add", icon: Plus },
-    ],
+    hasSubmenu: false,
   },
   {
     title: "Adult Challenges",
@@ -192,12 +188,6 @@ const trackerMenuItems = [
     title: "Activity Tracker",
     icon: Activity,
     href: "/admin/tracker",
-    hasSubmenu: false,
-  },
-  {
-    title: "Steps Tracking",
-    icon: Activity,
-    href: "/admin/tracker/steps",
     hasSubmenu: false,
   },
   {

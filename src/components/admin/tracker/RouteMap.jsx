@@ -1,9 +1,33 @@
 "use client";
 
-import { MapPin, Navigation } from "lucide-react";
+import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Ensure default Leaflet marker icons work with bundlers like Next.js
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: (markerIcon2x && markerIcon2x.src) || markerIcon2x,
+  iconUrl: (markerIcon && markerIcon.src) || markerIcon,
+  shadowUrl: (markerShadow && markerShadow.src) || markerShadow,
+});
 
 export default function RouteMap({ polyline, startLat, startLong, endLat, endLong, gpsPoints }) {
-  if (!polyline || polyline.length === 0) {
+  // Normalize data: prefer polyline; fall back to gpsPoints
+  const routePoints =
+    (Array.isArray(polyline) && polyline.length > 0
+      ? polyline.map((p) => ({ lat: p[0], lng: p[1] }))
+      : Array.isArray(gpsPoints)
+      ? gpsPoints.map((p) => ({
+          lat: p.latitude ?? p.lat,
+          lng: p.longitude ?? p.lng,
+        }))
+      : []
+    ).filter((p) => typeof p.lat === "number" && typeof p.lng === "number");
+
+  if (!routePoints || routePoints.length === 0) {
     return (
       <div className="w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
         <p className="text-muted-foreground">No route data available</p>
@@ -11,84 +35,62 @@ export default function RouteMap({ polyline, startLat, startLong, endLat, endLon
     );
   }
 
-  // Calculate center point for display
-  const centerLat = polyline.length > 0 
-    ? polyline.reduce((sum, coord) => sum + coord[0], 0) / polyline.length
-    : startLat || 0;
-  const centerLng = polyline.length > 0
-    ? polyline.reduce((sum, coord) => sum + coord[1], 0) / polyline.length
-    : startLong || 0;
+  const centerLat =
+    routePoints.reduce((sum, p) => sum + p.lat, 0) / routePoints.length;
+  const centerLng =
+    routePoints.reduce((sum, p) => sum + p.lng, 0) / routePoints.length;
+
+  const start =
+    typeof startLat === "number" &&
+    typeof startLong === "number" &&
+    !Number.isNaN(startLat) &&
+    !Number.isNaN(startLong)
+      ? { lat: startLat, lng: startLong }
+      : routePoints[0];
+
+  const end =
+    typeof endLat === "number" &&
+    typeof endLong === "number" &&
+    !Number.isNaN(endLat) &&
+    !Number.isNaN(endLong)
+      ? { lat: endLat, lng: endLong }
+      : routePoints[routePoints.length - 1];
 
   return (
-    <div className="relative w-full h-[400px] bg-muted rounded-lg border overflow-hidden">
-      {/* Placeholder Map */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center space-y-2">
-          <Navigation className="size-12 mx-auto text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Route Map</p>
-          <p className="text-xs text-muted-foreground">
-            Route coordinates: {centerLat.toFixed(4)}, {centerLng.toFixed(4)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Points: {polyline.length}
-          </p>
-        </div>
-      </div>
+    <div className="relative w-full h-[400px] rounded-lg border overflow-hidden">
+      <MapContainer
+        center={[centerLat, centerLng]}
+        zoom={17}
+        maxZoom={22}
+        scrollWheelZoom={true}
+        className="w-full h-full"
+        zoomControl={true}
+      >
+        <TileLayer
+          attribution="&copy; OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={22}
+        />
 
-      {/* Route visualization overlay */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Start marker */}
-        {startLat && startLong && (
-          <div 
-            className="absolute transform -translate-x-1/2 -translate-y-1/2"
-            style={{
-              left: "20%",
-              top: "30%",
-            }}
-          >
-            <div className="bg-green-500 rounded-full p-2 shadow-lg">
-              <MapPin className="size-4 text-white" />
-            </div>
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs bg-white px-2 py-1 rounded shadow">
-              Start
-            </div>
-          </div>
+        <Polyline
+          positions={routePoints.map((p) => [p.lat, p.lng])}
+          pathOptions={{ color: "#3b82f6", weight: 4 }}
+        />
+
+        {start && (
+          <Marker position={[start.lat, start.lng]}>
+            <Popup>Start</Popup>
+          </Marker>
         )}
 
-        {/* End marker */}
-        {endLat && endLong && (
-          <div 
-            className="absolute transform -translate-x-1/2 -translate-y-1/2"
-            style={{
-              left: "80%",
-              top: "70%",
-            }}
-          >
-            <div className="bg-red-500 rounded-full p-2 shadow-lg">
-              <MapPin className="size-4 text-white" />
-            </div>
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs bg-white px-2 py-1 rounded shadow">
-              End
-            </div>
-          </div>
+        {end && (
+          <Marker position={[end.lat, end.lng]}>
+            <Popup>End</Popup>
+          </Marker>
         )}
-
-        {/* Route path (simplified line) */}
-        <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
-          <polyline
-            points={polyline.map((coord, index) => {
-              const x = 20 + (index / polyline.length) * 60 + "%";
-              const y = 30 + (index / polyline.length) * 40 + "%";
-              return `${x},${y}`;
-            }).join(" ")}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="3"
-            opacity="0.8"
-          />
-        </svg>
-      </div>
+      </MapContainer>
     </div>
   );
 }
+
 

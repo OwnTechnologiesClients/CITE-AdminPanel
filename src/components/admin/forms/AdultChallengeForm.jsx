@@ -25,6 +25,7 @@ export default function AdultChallengeForm({ initialData = null }) {
     name: initialData?.name || "",
     slug: initialData?.slug || "",
     description: initialData?.description || "",
+    challengeType: initialData?.challengeType || "daily_repeat",
     duration: initialData?.duration || 5,
     startDate: initialData?.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : "",
     endDate: initialData?.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : "",
@@ -152,6 +153,7 @@ export default function AdultChallengeForm({ initialData = null }) {
       formDataToSend.append('name', formData.name);
       formDataToSend.append('slug', formData.slug);
       formDataToSend.append('description', formData.description || '');
+      formDataToSend.append('challengeType', formData.challengeType);
       formDataToSend.append('duration', formData.duration);
       formDataToSend.append('startDate', formData.startDate);
       formDataToSend.append('endDate', formData.endDate);
@@ -259,6 +261,26 @@ export default function AdultChallengeForm({ initialData = null }) {
         <h3 className="text-lg font-semibold">Challenge Duration & Time</h3>
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-2">
+            <Label htmlFor="challengeType">Challenge Type *</Label>
+            <Select
+              value={formData.challengeType}
+              onValueChange={(value) => handleChange("challengeType", value)}
+            >
+              <SelectTrigger id="challengeType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily_repeat">Daily repeat (same target each day)</SelectItem>
+                <SelectItem value="time_gated">Time gated (complete within time limit)</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              How the challenge runs: daily target, time limit, or custom
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="duration">Duration (days) *</Label>
             <Input
               id="duration"
@@ -314,7 +336,7 @@ export default function AdultChallengeForm({ initialData = null }) {
         <div>
           <h3 className="text-lg font-semibold">Daily Target</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            The target value participants must achieve each day (e.g., "7 km" means run 7 km each day, "10000 steps" means take 10000 steps each day)
+            The target value participants must achieve each day (e.g., "7 km" means run 7 km each day)
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
@@ -344,7 +366,6 @@ export default function AdultChallengeForm({ initialData = null }) {
               <SelectContent>
                 <SelectItem value="km">Kilometers</SelectItem>
                 <SelectItem value="m">Meters</SelectItem>
-                <SelectItem value="steps">Steps</SelectItem>
                 <SelectItem value="minutes">Minutes</SelectItem>
                 <SelectItem value="hours">Hours</SelectItem>
                 <SelectItem value="count">Count</SelectItem>
@@ -370,7 +391,6 @@ export default function AdultChallengeForm({ initialData = null }) {
                 <span className="text-sm text-muted-foreground">
                   {formData.dailyGoal.unit === "km" && "Kilometers"}
                   {formData.dailyGoal.unit === "m" && "Meters"}
-                  {formData.dailyGoal.unit === "steps" && "Steps"}
                   {formData.dailyGoal.unit === "minutes" && "Minutes"}
                   {formData.dailyGoal.unit === "hours" && "Hours"}
                   {formData.dailyGoal.unit === "count" && "Count"}
@@ -433,7 +453,6 @@ export default function AdultChallengeForm({ initialData = null }) {
                   <SelectContent>
                     <SelectItem value="running">Running</SelectItem>
                     <SelectItem value="walking">Walking</SelectItem>
-                    <SelectItem value="steps">Steps</SelectItem>
                     <SelectItem value="cycling">Cycling</SelectItem>
                   </SelectContent>
                 </Select>

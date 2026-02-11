@@ -78,7 +78,6 @@ export default function AdultsTable() {
               return {
                 ...adult,
                 habits: habitsCount,
-                routines: 0, // Routines not implemented yet
                 reflections: reflectionsCount,
               };
             } catch (err) {
@@ -86,7 +85,6 @@ export default function AdultsTable() {
               return {
                 ...adult,
                 habits: 0,
-                routines: 0,
                 reflections: 0,
               };
             }
@@ -168,7 +166,6 @@ export default function AdultsTable() {
                 <TableHead>Adult</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Habits</TableHead>
-                <TableHead>Routines</TableHead>
                 <TableHead>Reflections</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
@@ -178,7 +175,7 @@ export default function AdultsTable() {
             <TableBody>
               {filteredAdults.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     {searchQuery ? "No adults found matching your search" : "No adults found"}
                   </TableCell>
                 </TableRow>
@@ -197,7 +194,6 @@ export default function AdultsTable() {
                       </TableCell>
                       <TableCell>{adult.email || adult.username}</TableCell>
                       <TableCell>{adult.habits || 0}</TableCell>
-                      <TableCell>{adult.routines || 0}</TableCell>
                       <TableCell>{adult.reflections || 0}</TableCell>
                       <TableCell>
                         <Badge variant={adult.status === 1 || adult.status === "active" ? "default" : "outline"}>

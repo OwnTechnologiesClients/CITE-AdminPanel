@@ -47,6 +47,24 @@ function calculateAge(dateOfBirth) {
   return age;
 }
 
+function resolveParentInfo(parentId) {
+  if (!parentId) {
+    return { name: "Unknown", id: null };
+  }
+
+  if (typeof parentId === "object" && parentId !== null) {
+    return {
+      name: parentId.fullName || "Unknown",
+      id: parentId._id ?? parentId.id ?? null,
+    };
+  }
+
+  return {
+    name: parentId,
+    id: parentId,
+  };
+}
+
 export default function KidsTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [kids, setKids] = useState([]);
@@ -73,18 +91,15 @@ export default function KidsTable() {
               ]);
 
               const age = kid.dateOfBirth ? calculateAge(kid.dateOfBirth) : null;
-
-              // parentId is now populated by backend with fullName and email
-              const parentName = kid.parentId?.fullName || (typeof kid.parentId === 'object' && kid.parentId.fullName) || "Unknown";
-              const parentId = kid.parentId?._id || (typeof kid.parentId === 'object' ? kid.parentId._id : kid.parentId);
+              const parentInfo = resolveParentInfo(kid.parentId);
 
               return {
                 _id: kid._id,
                 id: kid._id,
                 name: kid.name,
                 age: age,
-                parent: parentName,
-                parentId: parentId,
+                parent: parentInfo.name,
+                parentId: parentInfo.id,
                 tasksCompleted: stats?.completedTasks || 0, // Now counts all TaskCompletion records
                 coins: kid.totalCoins || stats?.totalCoins || 0,
                 status: kid.status === 1 ? "active" : "inactive",
@@ -93,18 +108,15 @@ export default function KidsTable() {
             } catch (err) {
               console.error(`Error fetching stats for kid ${kid._id}:`, err);
               const age = kid.dateOfBirth ? calculateAge(kid.dateOfBirth) : null;
-              
-              // parentId is now populated by backend
-              const parentName = kid.parentId?.fullName || (typeof kid.parentId === 'object' && kid.parentId.fullName) || "Unknown";
-              const parentId = kid.parentId?._id || (typeof kid.parentId === 'object' ? kid.parentId._id : kid.parentId);
+              const parentInfo = resolveParentInfo(kid.parentId);
               
               return {
                 _id: kid._id,
                 id: kid._id,
                 name: kid.name,
                 age: age,
-                parent: parentName,
-                parentId: parentId,
+                parent: parentInfo.name,
+                parentId: parentInfo.id,
                 tasksCompleted: 0,
                 coins: kid.totalCoins || 0,
                 status: kid.status === 1 ? "active" : "inactive",

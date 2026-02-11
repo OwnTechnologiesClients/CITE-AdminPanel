@@ -69,35 +69,6 @@ export async function deleteActivitySession(sessionId) {
 }
 
 /**
- * Get steps data
- */
-export async function getStepsData(params = {}) {
-  try {
-    const response = await apiGet('/tracker/steps', params);
-    return {
-      data: response.data || [],
-      pagination: response.pagination || {}
-    };
-  } catch (error) {
-    console.error('Error fetching steps data:', error);
-    throw error;
-  }
-}
-
-/**
- * Get steps statistics
- */
-export async function getStepsStatistics(period = 'week') {
-  try {
-    const response = await apiGet('/tracker/steps/statistics', { period });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching steps statistics:', error);
-    throw error;
-  }
-}
-
-/**
  * Get weight data
  */
 export async function getWeightData(params = {}) {
@@ -122,45 +93,6 @@ export async function getWeightStatistics() {
     return response.data;
   } catch (error) {
     console.error('Error fetching weight statistics:', error);
-    throw error;
-  }
-}
-
-/**
- * Get today's steps
- */
-export async function getTodaySteps() {
-  try {
-    const response = await apiGet('/tracker/steps/today');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching today steps:', error);
-    throw error;
-  }
-}
-
-/**
- * Get week's steps
- */
-export async function getWeekSteps() {
-  try {
-    const response = await apiGet('/tracker/steps/week');
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching week steps:', error);
-    throw error;
-  }
-}
-
-/**
- * Get month's steps
- */
-export async function getMonthSteps() {
-  try {
-    const response = await apiGet('/tracker/steps/month');
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching month steps:', error);
     throw error;
   }
 }
@@ -194,7 +126,6 @@ export async function startChallengeSession({ challengeId, dayNumber, activityTy
  * @param {Object} sessionData - Session completion data
  * @param {number} sessionData.durationSeconds - Duration in seconds
  * @param {number} [sessionData.distanceMeters] - Distance in meters
- * @param {number} [sessionData.steps] - Step count
  * @param {number} [sessionData.calories] - Calories burned
  * @param {number} [sessionData.averageSpeed] - Average speed (km/h)
  * @param {number} [sessionData.averagePace] - Average pace (min/km)

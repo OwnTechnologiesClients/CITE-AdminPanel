@@ -52,3 +52,16 @@ export async function getHabitStreak(habitId) {
   }
 }
 
+/**
+ * Get completion history for a habit (admin gets all completions for that habit)
+ */
+export async function getHabitCompletions(habitId, params = {}) {
+  try {
+    const response = await apiGet(`/habit-completions/habit/${habitId}`, params);
+    return response?.data ?? [];
+  } catch (error) {
+    console.error('Error fetching habit completions:', error);
+    throw error;
+  }
+}
+

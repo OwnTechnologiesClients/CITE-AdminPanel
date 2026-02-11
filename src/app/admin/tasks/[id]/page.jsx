@@ -223,6 +223,35 @@ export default function ViewTaskPage() {
                 </p>
               </div>
             )}
+            {!isRecurring && task.photoProofPath && (
+              <div className="md:col-span-2">
+                <Label className="text-muted-foreground">Photo Proof</Label>
+                <div className="mt-2">
+                  <div className="relative group inline-block">
+                    <div className="relative w-32 h-32 rounded-lg border overflow-hidden bg-muted cursor-pointer"
+                         onClick={() => window.open(getImageUrl(task.photoProofPath), '_blank')}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getImageUrl(task.photoProofPath)}
+                        alt="Task photo proof"
+                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const fallback = e.target.nextElementSibling;
+                          if (fallback) fallback.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden absolute inset-0 items-center justify-center bg-muted">
+                        <Camera className="size-6 text-muted-foreground opacity-50" />
+                      </div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <Maximize2 className="size-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

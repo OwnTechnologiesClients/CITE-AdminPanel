@@ -34,65 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock data - fallback (not used if API works)
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "Parent",
-    family: "Doe Family",
-    status: "active",
-    tasksCompleted: 45,
-    coins: 1250,
-    joinedDate: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "Parent",
-    family: "Smith Family",
-    status: "active",
-    tasksCompleted: 38,
-    coins: 980,
-    joinedDate: "2024-02-20",
-  },
-  {
-    id: 3,
-    name: "Emma Johnson",
-    email: "emma.j@example.com",
-    role: "Kid",
-    family: "Johnson Family",
-    status: "active",
-    tasksCompleted: 67,
-    coins: 2100,
-    joinedDate: "2024-01-10",
-  },
-  {
-    id: 4,
-    name: "Michael Brown",
-    email: "m.brown@example.com",
-    role: "Adult",
-    family: "Brown Family",
-    status: "active",
-    tasksCompleted: 52,
-    coins: 1450,
-    joinedDate: "2024-03-05",
-  },
-  {
-    id: 5,
-    name: "Sarah Wilson",
-    email: "sarah.w@example.com",
-    role: "Parent",
-    family: "Wilson Family",
-    status: "inactive",
-    tasksCompleted: 12,
-    coins: 350,
-    joinedDate: "2024-04-12",
-  },
-];
-
 const roleColors = {
   Parent: "default",
   Kid: "secondary",

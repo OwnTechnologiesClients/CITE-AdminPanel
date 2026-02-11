@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { getUserById } from "@/lib/api/users";
 import { formatDate } from "@/lib/utils";
+import { getDisplayEmail, getDisplayPhone, getDisplaySubtitle } from "@/lib/userDisplayUtils";
 import { getPlanById } from "@/lib/data/subscriptionPlans";
 import { useRouter } from "next/navigation";
 
@@ -101,8 +102,9 @@ export default function ViewUserPage() {
   }
 
   const userName = user.fullName || user.username || "Unknown";
-  const userEmail = user.email || user.username || "N/A";
-  const userPhone = user.phoneNumber || user.phone || "N/A";
+  const userEmail = getDisplayEmail(user);
+  const userPhone = getDisplayPhone(user);
+  const userSubtitle = getDisplaySubtitle(user);
   const userRoles = user.roles || [];
   const primaryRole = userRoles[0]?.name || user.userType || "N/A";
   
@@ -151,7 +153,7 @@ export default function ViewUserPage() {
               </Avatar>
               <div>
                 <h2 className="text-2xl font-semibold">{userName}</h2>
-                <p className="text-muted-foreground">{userEmail}</p>
+                <p className="text-muted-foreground">{userSubtitle}</p>
               </div>
             </div>
 
@@ -182,15 +184,15 @@ export default function ViewUserPage() {
               </div>
               <div>
                 <Label className="text-muted-foreground">Email</Label>
-                <p className="mt-1 font-medium flex items-center gap-2">
-                  <Mail className="size-4 text-muted-foreground" />
+                <p className="mt-1 font-medium flex items-center gap-2 break-all">
+                  <Mail className="size-4 text-muted-foreground shrink-0" />
                   {userEmail}
                 </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Phone</Label>
-                <p className="mt-1 font-medium flex items-center gap-2">
-                  <Phone className="size-4 text-muted-foreground" />
+                <p className="mt-1 font-medium flex items-center gap-2 break-all">
+                  <Phone className="size-4 text-muted-foreground shrink-0" />
                   {userPhone}
                 </p>
               </div>

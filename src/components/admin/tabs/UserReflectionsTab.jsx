@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Calendar, Clock } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -58,7 +58,7 @@ export default function UserReflectionsTab({ reflections }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Heart className="size-4 text-muted-foreground" />
+                      <span className="text-lg" aria-hidden>💭</span>
                       <span className="font-medium">{feelings}</span>
                     </div>
                   </TableCell>

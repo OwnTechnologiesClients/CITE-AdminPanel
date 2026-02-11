@@ -38,7 +38,7 @@ export default function EventForm({ initialData = null }) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     setLoading(false);
-    router.push("/admin/events");
+    router.push("/admin/families/list");
     router.refresh();
   };
 

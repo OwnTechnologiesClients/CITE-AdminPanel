@@ -39,4 +39,17 @@ export async function getRewardsByKidId(kidId) {
   }
 }
 
+/**
+ * Get reward redemptions history for a kid (admin or parent)
+ */
+export async function getRewardRedemptions(kidId) {
+  try {
+    const response = await apiGet('/rewards/redemptions', { kidId });
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching reward redemptions:', error);
+    throw error;
+  }
+}
+
 

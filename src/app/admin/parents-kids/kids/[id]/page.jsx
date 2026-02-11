@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, CheckCircle2, Calendar, UserCheck, ClipboardList, Coins, Camera, Clock } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, Calendar, UserCheck, ClipboardList, Coins, Camera, Clock, Gift } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -39,7 +39,7 @@ import { formatDate } from "@/lib/utils";
 import { getKidById, getKidStats } from "@/lib/api/kids";
 import { getParentById } from "@/lib/api/parents";
 import { getTasksByKidId } from "@/lib/api/tasks";
-import { getRewardsByKidId } from "@/lib/api/rewards";
+import { getRewardsByKidId, getRewardRedemptions } from "@/lib/api/rewards";
 
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -60,6 +60,7 @@ export default function ViewKidPage() {
   const [kid, setKid] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [rewards, setRewards] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -90,10 +91,11 @@ export default function ViewKidPage() {
           }
         }
 
-        // Fetch tasks and rewards
-        const [tasksData, rewardsData] = await Promise.all([
+        // Fetch tasks, rewards, and redemptions
+        const [tasksData, rewardsData, redemptionsData] = await Promise.all([
           getTasksByKidId(id),
           getRewardsByKidId(id),
+          getRewardRedemptions(id).catch(() => []),
         ]);
 
         // Transform tasks
@@ -139,12 +141,11 @@ export default function ViewKidPage() {
           status: kidData.status === 1 ? "active" : "inactive",
           joinedDate: kidData.createdAt,
           lastActive: kidData.updatedAt,
-          tasksCompleted: stats?.completedTasks || 0,
-          totalTasks: stats?.totalTasks || 0,
           coins: kidData.totalCoins || stats?.totalCoins || 0,
         });
         setTasks(transformedTasks);
         setRewards(transformedRewards);
+        setRedemptions(Array.isArray(redemptionsData) ? redemptionsData : []);
       } catch (err) {
         console.error("Error fetching kid data:", err);
         setError(err.message || "Failed to load kid data");
@@ -318,8 +319,10 @@ export default function ViewKidPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="size-5 text-green-600" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  <p className="text-2xl font-bold">{kid.tasksCompleted} / {kid.totalTasks || tasks.length}</p>
+                  <p className="text-sm text-muted-foreground">Tasks completed (current period)</p>
+                  <p className="text-2xl font-bold">
+                    {tasks.filter((t) => t.status === "completed").length} / {tasks.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -366,6 +369,7 @@ export default function ViewKidPage() {
               <TabsList>
                 <TabsTrigger value="tasks">Tasks ({tasks.length})</TabsTrigger>
                 <TabsTrigger value="rewards">Rewards ({rewards.length})</TabsTrigger>
+                <TabsTrigger value="redemptions">Redemptions ({redemptions.length})</TabsTrigger>
               </TabsList>
             </div>
 
@@ -631,6 +635,50 @@ export default function ViewKidPage() {
                     )}
                   </div>
                 </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="redemptions" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  History of rewards redeemed by this kid
+                </p>
+              </div>
+
+              {redemptions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Gift className="size-12 mx-auto mb-4 opacity-50" />
+                  <p>No redemptions yet</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Reward</TableHead>
+                      <TableHead>Redeemed At</TableHead>
+                      <TableHead>Coins Spent</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {redemptions.map((r) => (
+                      <TableRow key={r.id || r._id}>
+                        <TableCell className="font-medium">{r.rewardName || "—"}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="size-4 text-muted-foreground" />
+                            {r.redeemedAt ? formatDate(r.redeemedAt) : "—"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Coins className="size-4 text-yellow-600" />
+                            {r.coinsSpent ?? r.rewardCostInCoins ?? "—"}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </TabsContent>
           </Tabs>

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MapPin } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -80,7 +79,6 @@ export default function HabitsTable() {
                 <TableRow>
                   <TableHead>Habit Name</TableHead>
                   <TableHead>User</TableHead>
-                  <TableHead>Location Tracking</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -89,7 +87,7 @@ export default function HabitsTable() {
               <TableBody>
                 {filteredHabits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "No habits found matching your search" : "No habits found"}
                     </TableCell>
                   </TableRow>
@@ -101,24 +99,14 @@ export default function HabitsTable() {
                         <TableCell className="font-medium">{habit.name}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{userName}</TableCell>
                         <TableCell>
-                          {habit.locationTracking ? (
-                            <Badge variant="outline" className="gap-1">
-                              <MapPin className="size-3" />
-                              Enabled
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Disabled</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
                           <Badge variant={habit.status === 1 && habit.isActive ? "default" : "outline"}>
                             {habit.status === 1 && habit.isActive ? "active" : "inactive"}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(habit.createdAt || habit.created)}</TableCell>
                         <TableCell className="text-right">
-                          <Link href={`/admin/adults/habits/${habit._id || habit.id}`}>
-                            <Button variant="ghost" size="sm">View</Button>
+                          <Link href={`/admin/adults/users/${habit.userId?._id || habit.userId?.id || habit.userId}`}>
+                            <Button variant="ghost" size="sm">View user</Button>
                           </Link>
                         </TableCell>
                       </TableRow>

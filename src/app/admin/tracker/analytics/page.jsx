@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, TrendingUp, MapPin, Clock, Target } from "lucide-react";
-import { getActivityStatistics, getStepsStatistics } from "@/lib/api/tracker";
+import { Activity, TrendingUp, MapPin, Clock } from "lucide-react";
+import { getActivityStatistics } from "@/lib/api/tracker";
 
 export default function TrackerAnalyticsPage() {
   const [activityStats, setActivityStats] = useState(null);
-  const [stepsStats, setStepsStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,13 +17,9 @@ export default function TrackerAnalyticsPage() {
         setLoading(true);
         setError(null);
 
-        const [activityResponse, stepsResponse] = await Promise.all([
-          getActivityStatistics().catch(() => null),
-          getStepsStatistics("week").catch(() => null),
-        ]);
+        const activityResponse = await getActivityStatistics().catch(() => null);
 
         setActivityStats(activityResponse);
-        setStepsStats(stepsResponse);
       } catch (err) {
         console.error("Error fetching tracker analytics:", err);
         setError(err.message || "Failed to load analytics");
@@ -131,64 +126,6 @@ export default function TrackerAnalyticsPage() {
         </div>
       </div>
 
-      {/* Steps Statistics */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Steps Tracking</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Steps</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stepsStats?.totalSteps?.toLocaleString() || "0"}
-              </div>
-              <p className="text-xs text-muted-foreground">This period</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Steps</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stepsStats?.averageSteps?.toLocaleString() || "0"}
-              </div>
-              <p className="text-xs text-muted-foreground">Per day</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Distance</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stepsStats?.totalDistance
-                  ? `${stepsStats.totalDistance.toFixed(2)} km`
-                  : "0 km"}
-              </div>
-              <p className="text-xs text-muted-foreground">This period</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Calories</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stepsStats?.totalCalories || 0}</div>
-              <p className="text-xs text-muted-foreground">Burned</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
       {/* Activity Types Breakdown */}
       {activityStats?.activityTypes && Object.keys(activityStats.activityTypes).length > 0 && (
         <Card>
@@ -209,7 +146,7 @@ export default function TrackerAnalyticsPage() {
         </Card>
       )}
 
-      {(!activityStats && !stepsStats) && (
+      {!activityStats && (
         <Card>
           <CardContent className="py-8">
             <div className="text-center text-muted-foreground">

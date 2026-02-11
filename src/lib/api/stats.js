@@ -14,6 +14,55 @@ export async function getParentsKidsDashboardStats() {
 }
 
 /**
+ * Get main admin dashboard statistics (aggregated from existing APIs)
+ */
+export async function getAdminDashboardStats() {
+  try {
+    const { getUsers } = await import('./users');
+    const { getFamilies } = await import('./families');
+    const { getTasks } = await import('./tasks');
+    const [users, families, parentsKidsStats, tasks] = await Promise.all([
+      getUsers().catch(() => []),
+      getFamilies().catch(() => []),
+      getParentsKidsDashboardStats().catch(() => null),
+      getTasks().catch(() => []),
+    ]);
+
+    const totalUsers = users.length;
+    const totalFamilies = families.length;
+    const activeTasks = parentsKidsStats?.activeTasks?.value ?? 0;
+    const rewardsCreated = parentsKidsStats?.rewardsCreated?.value ?? 0;
+    const tasksCompleted = Array.isArray(tasks) ? tasks.filter((t) => t.isCompleted).length : 0;
+
+    // Recent activity: latest users (use createdAt if available, else order by list order)
+    const sortedUsers = [...(users || [])].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+      return dateB - dateA;
+    });
+    const recentActivity = (sortedUsers.slice(0, 5) || []).map((u) => ({
+      type: 'user_joined',
+      title: `${u.fullName || u.username || u.email || 'User'} joined`,
+      time: u.createdAt || null,
+      id: u._id || u.id,
+    }));
+
+    return {
+      totalUsers,
+      totalFamilies,
+      activeTasks,
+      rewardsCreated,
+      tasksCompleted,
+      parentsKidsStats,
+      recentActivity,
+    };
+  } catch (error) {
+    console.error('Error fetching admin dashboard stats:', error);
+    throw error;
+  }
+}
+
+/**
  * Get families dashboard statistics
  * Note: Backend doesn't have this endpoint yet, so we'll aggregate from existing endpoints
  */
