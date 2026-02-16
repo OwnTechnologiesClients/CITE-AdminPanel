@@ -11,7 +11,7 @@ import FamilyInfoTab from "@/components/admin/tabs/family/FamilyInfoTab";
 import FamilyEventsTab from "@/components/admin/tabs/family/FamilyEventsTab";
 import FamilyMealsTab from "@/components/admin/tabs/family/FamilyMealsTab";
 import FamilyListsTab from "@/components/admin/tabs/family/FamilyListsTab";
-import FamilyMediaTab from "@/components/admin/tabs/family/FamilyMediaTab";
+
 import FamilyCalendarTab from "@/components/admin/tabs/family/FamilyCalendarTab";
 import FamilyTrackerTab from "@/components/admin/tabs/family/FamilyTrackerTab";
 import FamilyRecipesTab from "@/components/admin/tabs/family/FamilyRecipesTab";
@@ -24,8 +24,7 @@ import {
   getFamilyMeals,
   getFamilyRecipes,
   getFamilyLists,
-  getFamilyMedia,
-  getFamilyMediaFolders,
+
   getFamilySchedules
 } from "@/lib/api/families";
 
@@ -39,8 +38,7 @@ export default function FamilyDetailPage() {
   const [meals, setMeals] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [lists, setLists] = useState([]);
-  const [media, setMedia] = useState([]);
-  const [folders, setFolders] = useState([]);
+
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,7 +50,7 @@ export default function FamilyDetailPage() {
         setError(null);
 
         // Fetch all family data in parallel
-        const [familyData, statsData, membersData, eventsData, mealsData, recipesData, listsData, mediaData, foldersData, schedulesData] = await Promise.all([
+        const [familyData, statsData, membersData, eventsData, mealsData, recipesData, listsData, schedulesData] = await Promise.all([
           getFamilyById(familyId),
           getFamilyStats(familyId).catch(() => null),
           getFamilyMembers(familyId).catch(() => []),
@@ -60,8 +58,7 @@ export default function FamilyDetailPage() {
           getFamilyMeals(familyId).catch(() => []),
           getFamilyRecipes(familyId).catch(() => []),
           getFamilyLists(familyId).catch(() => []),
-          getFamilyMedia(familyId).catch(() => []),
-          getFamilyMediaFolders(familyId).catch(() => []),
+
           getFamilySchedules(familyId).catch(() => []),
         ]);
 
@@ -72,8 +69,7 @@ export default function FamilyDetailPage() {
         setMeals(mealsData);
         setRecipes(recipesData);
         setLists(listsData);
-        setMedia(mediaData);
-        setFolders(foldersData);
+
         setSchedules(schedulesData);
       } catch (err) {
         console.error("Error fetching family data:", err);
@@ -139,7 +135,7 @@ export default function FamilyDetailPage() {
               <TabsTrigger value="recipes">Recipes ({recipes.length})</TabsTrigger>
               <TabsTrigger value="lists">Lists ({lists.length})</TabsTrigger>
               <TabsTrigger value="schedules">Timetable ({schedules.length})</TabsTrigger>
-              <TabsTrigger value="media">Media ({media.length})</TabsTrigger>
+
             </TabsList>
 
             <TabsContent value="info" className="mt-6">
@@ -174,9 +170,7 @@ export default function FamilyDetailPage() {
               <FamilySchedulesTab schedules={schedules} />
             </TabsContent>
 
-            <TabsContent value="media" className="mt-6">
-              <FamilyMediaTab media={media} folders={folders} />
-            </TabsContent>
+
 
             <TabsContent value="calendar" className="mt-6">
               <FamilyCalendarTab 

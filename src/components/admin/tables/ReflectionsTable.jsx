@@ -44,10 +44,8 @@ export default function ReflectionsTable() {
   const filteredReflections = reflections.filter(
     (reflection) => {
       const userName = reflection.userId?.fullName || reflection.userId?.email || "Unknown";
-      const feelings = Array.isArray(reflection.feelings) ? reflection.feelings.join(" ") : reflection.feelings || "";
       return (
         userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        feelings.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (reflection.mood && reflection.mood.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
@@ -95,7 +93,7 @@ export default function ReflectionsTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Feelings</TableHead>
+
                   <TableHead>Mood</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Date</TableHead>
@@ -105,20 +103,18 @@ export default function ReflectionsTable() {
               <TableBody>
                 {filteredReflections.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "No reflections found matching your search" : "No reflections found"}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredReflections.map((reflection) => {
                     const userName = reflection.userId?.fullName || reflection.userId?.email || "Unknown";
-                    const feelings = Array.isArray(reflection.feelings) 
-                      ? reflection.feelings.join(", ") 
-                      : reflection.feelings || "N/A";
+
                     return (
                       <TableRow key={reflection._id || reflection.id}>
                         <TableCell className="font-medium">{userName}</TableCell>
-                        <TableCell className="text-sm">{feelings}</TableCell>
+
                         <TableCell>
                           <Badge variant={getMoodVariant(reflection.mood)}>
                             {reflection.mood || "N/A"}

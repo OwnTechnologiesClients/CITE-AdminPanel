@@ -333,13 +333,13 @@ export default function TrackerPage() {
             </Table>
           )}
 
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Page {pagination.page} of {pagination.pages}
-              </div>
-              <div className="flex gap-2">
+          {/* Pagination - always visible when there is at least one session */}
+          {filteredSessions.length > 0 && (
+            <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, pagination.total ?? filteredSessions.length)} of {pagination.total ?? filteredSessions.length}
+              </p>
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -348,13 +348,16 @@ export default function TrackerPage() {
                 >
                   Previous
                 </Button>
+                <span className="text-sm text-muted-foreground px-2">
+                  Page {pagination.page ?? currentPage} of {Math.max(1, pagination.pages ?? 1)}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setCurrentPage((p) => Math.min(pagination.pages, p + 1))
+                    setCurrentPage((p) => Math.min(pagination.pages ?? 1, p + 1))
                   }
-                  disabled={currentPage === pagination.pages}
+                  disabled={currentPage >= (pagination.pages ?? 1)}
                 >
                   Next
                 </Button>

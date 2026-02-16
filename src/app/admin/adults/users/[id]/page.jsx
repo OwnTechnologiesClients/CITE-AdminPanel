@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,14 @@ import { getUserAchievements } from "@/lib/api/achievements";
 import { getActivitySessions } from "@/lib/api/tracker";
 import UserHabitsTab from "@/components/admin/tabs/UserHabitsTab";
 import UserReflectionsTab from "@/components/admin/tabs/UserReflectionsTab";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Matches app achievement definitions (title -> description, emoji)
 const ACHIEVEMENT_DEFINITIONS = {
@@ -49,6 +57,23 @@ export default function AdultUserDetailPage() {
   const [trackerSessions, setTrackerSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const TRACKER_PAGE_SIZE = 10;
+  const ACHIEVEMENTS_PAGE_SIZE = 10;
+  const [trackerPage, setTrackerPage] = useState(1);
+  const [achievementsPage, setAchievementsPage] = useState(1);
+
+  const paginatedAchievements = useMemo(() => {
+    const start = (achievementsPage - 1) * ACHIEVEMENTS_PAGE_SIZE;
+    return achievements.slice(start, start + ACHIEVEMENTS_PAGE_SIZE);
+  }, [achievements, achievementsPage]);
+  const achievementsTotalPages = Math.max(1, Math.ceil(achievements.length / ACHIEVEMENTS_PAGE_SIZE));
+
+  const paginatedTrackerSessions = useMemo(() => {
+    const start = (trackerPage - 1) * TRACKER_PAGE_SIZE;
+    return trackerSessions.slice(start, start + TRACKER_PAGE_SIZE);
+  }, [trackerSessions, trackerPage]);
+  const trackerTotalPages = Math.max(1, Math.ceil(trackerSessions.length / TRACKER_PAGE_SIZE));
 
   useEffect(() => {
     async function fetchUserData() {
@@ -297,7 +322,7 @@ export default function AdultUserDetailPage() {
             <TabsContent value="reflections" className="mt-6">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Mood and feeling entries for this user
+                  Mood entries for this user
                 </p>
                 <UserReflectionsTab reflections={reflections} />
               </div>
@@ -308,34 +333,71 @@ export default function AdultUserDetailPage() {
                 {achievements.length === 0 ? (
                   <p className="text-muted-foreground">No achievements unlocked yet.</p>
                 ) : (
-                  <ul className="space-y-3">
-                    {achievements.map((entry, i) => {
-                      const title = typeof entry === "string" ? entry : entry?.title;
-                      const unlockedAt = typeof entry === "object" && entry?.unlockedAt ? entry.unlockedAt : null;
-                      const def = title ? ACHIEVEMENT_DEFINITIONS[title] : null;
-                      return (
-                        <li
-                          key={i}
-                          className="flex items-start gap-3 rounded-lg border p-3"
-                        >
-                          <span className="text-2xl shrink-0" aria-hidden>
-                            {def?.emoji || "🏅"}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium">{title || "Achievement"}</p>
-                            <p className="text-sm text-muted-foreground mt-0.5">
-                              {def?.description ?? "—"}
-                            </p>
-                            {unlockedAt && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Unlocked {formatDate(unlockedAt)}
+                  <>
+                    <ul className="space-y-3">
+                      {paginatedAchievements.map((entry, i) => {
+                        const idx = (achievementsPage - 1) * ACHIEVEMENTS_PAGE_SIZE + i;
+                        const title = typeof entry === "string" ? entry : entry?.title;
+                        const unlockedAt = typeof entry === "object" && entry?.unlockedAt ? entry.unlockedAt : null;
+                        const def = title ? ACHIEVEMENT_DEFINITIONS[title] : null;
+                        return (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-3 rounded-lg border p-3"
+                          >
+                            <span className="text-2xl shrink-0" aria-hidden>
+                              {def?.emoji || "🏅"}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium">{title || "Achievement"}</p>
+                              <p className="text-sm text-muted-foreground mt-0.5">
+                                {def?.description ?? "—"}
                               </p>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                              {unlockedAt && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Unlocked {formatDate(unlockedAt)}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {achievements.length > 0 && (
+                      <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {(achievementsPage - 1) * ACHIEVEMENTS_PAGE_SIZE + 1}–{Math.min(achievementsPage * ACHIEVEMENTS_PAGE_SIZE, achievements.length)} of {achievements.length}
+                        </p>
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious
+                                onClick={() => setAchievementsPage((p) => Math.max(1, p - 1))}
+                                className={achievementsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: achievementsTotalPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setAchievementsPage(page)}
+                                  isActive={achievementsPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext
+                                onClick={() => setAchievementsPage((p) => Math.min(achievementsTotalPages, p + 1))}
+                                className={achievementsPage === achievementsTotalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>
@@ -345,56 +407,92 @@ export default function AdultUserDetailPage() {
                 {trackerSessions.length === 0 ? (
                   <p className="text-muted-foreground">No tracker sessions yet.</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Session</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Start</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trackerSessions.map((session) => (
-                        <TableRow key={session._id || session.sessionId}>
-                          <TableCell className="font-mono text-xs">
-                            {session.sessionId?.substring(0, 12)}...
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {session.activityType || "—"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {session.source === "challenge" ? "Challenge" : "Standalone"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {session.status || "—"}
-                          </TableCell>
-                          <TableCell>
-                            {session.startTime
-                              ? formatDate(session.startTime)
-                              : "—"}
-                          </TableCell>
-                          <TableCell>
-                            {session.duration != null
-                              ? `${Math.floor(session.duration / 60)}m`
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Link href={`/admin/tracker/${session.sessionId}`}>
-                              <Button variant="ghost" size="sm">
-                                View
-                              </Button>
-                            </Link>
-                          </TableCell>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Session</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Source</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Start</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedTrackerSessions.map((session) => (
+                          <TableRow key={session._id || session.sessionId}>
+                            <TableCell className="font-mono text-xs">
+                              {session.sessionId?.substring(0, 12)}...
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {session.activityType || "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {session.source === "challenge" ? "Challenge" : "Standalone"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {session.status || "—"}
+                            </TableCell>
+                            <TableCell>
+                              {session.startTime
+                                ? formatDate(session.startTime)
+                                : "—"}
+                            </TableCell>
+                            <TableCell>
+                              {session.duration != null
+                                ? `${Math.floor(session.duration / 60)}m`
+                                : "—"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Link href={`/admin/tracker/${session.sessionId}`}>
+                                <Button variant="ghost" size="sm">
+                                  View
+                                </Button>
+                              </Link>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {trackerSessions.length > 0 && (
+                      <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {(trackerPage - 1) * TRACKER_PAGE_SIZE + 1}–{Math.min(trackerPage * TRACKER_PAGE_SIZE, trackerSessions.length)} of {trackerSessions.length}
+                        </p>
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious
+                                onClick={() => setTrackerPage((p) => Math.max(1, p - 1))}
+                                className={trackerPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: trackerTotalPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setTrackerPage(page)}
+                                  isActive={trackerPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext
+                                onClick={() => setTrackerPage((p) => Math.min(trackerTotalPages, p + 1))}
+                                className={trackerPage === trackerTotalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>

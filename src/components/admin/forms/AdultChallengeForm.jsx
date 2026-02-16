@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { X, Plus, Trash2 } from "lucide-react";
 import { apiPost, apiPut, apiPostFormData, apiPutFormData } from "@/lib/api/client";
+import { toast } from "sonner";
 
 export default function AdultChallengeForm({ initialData = null }) {
   const router = useRouter();
@@ -25,19 +26,34 @@ export default function AdultChallengeForm({ initialData = null }) {
     name: initialData?.name || "",
     slug: initialData?.slug || "",
     description: initialData?.description || "",
-    challengeType: initialData?.challengeType || "daily_repeat",
     duration: initialData?.duration || 5,
+    registrationDeadline: initialData?.registrationDeadline
+      ? (() => {
+        const d = new Date(initialData.registrationDeadline);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const h = String(d.getHours()).padStart(2, "0");
+        const min = String(d.getMinutes()).padStart(2, "0");
+        return `${y}-${m}-${day}T${h}:${min}`;
+      })()
+      : "",
     startDate: initialData?.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : "",
     endDate: initialData?.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : "",
     dailyGoal: {
-      value: initialData?.dailyGoal?.value || 0,
+      value: initialData?.dailyGoal?.value ?? "",
       unit: initialData?.dailyGoal?.unit || "km",
       customUnit: initialData?.dailyGoal?.customUnit || null,
     },
-    timeLimit: initialData?.timeLimit || null,
     requiresTracker: initialData?.requiresTracker || false,
     activityType: initialData?.activityType || null,
-    conditions: initialData?.conditions || "",
+    conditions: (() => {
+      const c = initialData?.conditions;
+      if (!c) return [""];
+      if (typeof c === "string") return c.trim() ? [c.trim()] : [""];
+      if (Array.isArray(c) && c.length) return c.map((x) => (typeof x === "string" ? x : (x?.text ?? String(x ?? "")).trim()));
+      return [""];
+    })(),
     maxParticipants: initialData?.maxParticipants || null,
     status: initialData?.status || 1,
     rewards: initialData?.rewards || [
@@ -61,7 +77,7 @@ export default function AdultChallengeForm({ initialData = null }) {
 
   const handleChange = (field, value) => {
     const newData = { ...formData };
-    
+
     if (field.includes('.')) {
       // Handle nested fields like dailyGoal.value
       const [parent, child] = field.split('.');
@@ -69,18 +85,26 @@ export default function AdultChallengeForm({ initialData = null }) {
     } else {
       newData[field] = value;
     }
-    
+
     // Auto-generate slug when name changes
     if (field === "name" && !initialData) {
       newData.slug = generateSlug(value);
     }
-    
+
     // Auto-calculate end date when duration or start date changes
     if ((field === "duration" || field === "startDate") && newData.startDate && newData.duration) {
       const start = new Date(newData.startDate);
       const end = new Date(start);
       end.setDate(start.getDate() + parseInt(newData.duration) - 1);
       newData.endDate = end.toISOString().split('T')[0];
+    }
+
+    // Registration deadline = day before start date at 23:59 (e.g. challenge 15 Feb → deadline 14 Feb 23:59)
+    if (field === "startDate" && newData.startDate) {
+      const start = new Date(newData.startDate);
+      start.setDate(start.getDate() - 1);
+      start.setHours(23, 59, 59, 999);
+      newData.registrationDeadline = start.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm for datetime-local
     }
 
     // Auto-set activity type when tracker is enabled
@@ -140,12 +164,77 @@ export default function AdultChallengeForm({ initialData = null }) {
     setFormData(newData);
   };
 
+  const addCondition = () => {
+    setFormData((prev) => ({ ...prev, conditions: [...prev.conditions, ""] }));
+  };
+
+  const removeCondition = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      conditions: prev.conditions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateCondition = (index, value) => {
+    setFormData((prev) => {
+      const next = [...prev.conditions];
+      if (next[index] === undefined) return prev;
+      next[index] = value;
+      return { ...prev, conditions: next };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
+      if (!formData.registrationDeadline) {
+        toast.error("Registration Deadline Required", {
+          description: "Please specify a registration deadline.",
+        });
+        setError("Registration deadline is required.");
+        return;
+      }
+      const validConditions = formData.conditions.map((c) => (typeof c === "string" ? c : c?.text ?? "").trim()).filter(Boolean);
+      if (validConditions.length === 0) {
+        toast.error("Conditions Required", {
+          description: "At least one condition is required.",
+        });
+        setError("At least one condition is required.");
+        return;
+      }
+      const hasReward = formData.rewards?.some((pos) => pos.rewards && pos.rewards.length > 0);
+      if (!hasReward) {
+        toast.error("Missing Rewards", {
+          description: "At least one position (1st, 2nd, or 3rd) must have at least one reward.",
+        });
+        setError("At least one position (1st, 2nd, or 3rd) must have at least one reward.");
+        return;
+      }
+
+      if (formData.startDate) {
+        const startDate = new Date(formData.startDate);
+        const deadline = new Date(formData.registrationDeadline);
+        if (Number.isNaN(startDate.getTime()) || Number.isNaN(deadline.getTime())) {
+          toast.error("Invalid Date Format", {
+            description: "Please check the dates provided.",
+          });
+          setError("Invalid date format.");
+          return;
+        }
+        const startDayEnd = new Date(startDate);
+        startDayEnd.setHours(23, 59, 59, 999);
+        if (deadline > startDayEnd) {
+          toast.error("Invalid Registration Deadline", {
+            description: "Registration deadline must be on or before the start date.",
+          });
+          setError("Registration deadline must be on or before the start date.");
+          return;
+        }
+      }
+
       // Create FormData for file upload
       const formDataToSend = new FormData();
 
@@ -153,27 +242,27 @@ export default function AdultChallengeForm({ initialData = null }) {
       formDataToSend.append('name', formData.name);
       formDataToSend.append('slug', formData.slug);
       formDataToSend.append('description', formData.description || '');
-      formDataToSend.append('challengeType', formData.challengeType);
       formDataToSend.append('duration', formData.duration);
+      formDataToSend.append('registrationDeadline', new Date(formData.registrationDeadline).toISOString());
       formDataToSend.append('startDate', formData.startDate);
       formDataToSend.append('endDate', formData.endDate);
-      formDataToSend.append('dailyGoal', JSON.stringify(formData.dailyGoal));
-      if (formData.timeLimit) {
-        formDataToSend.append('timeLimit', formData.timeLimit);
-      }
+      formDataToSend.append('dailyGoal', JSON.stringify({
+        ...formData.dailyGoal,
+        value: Number(formData.dailyGoal.value) || 0
+      }));
       // Proof is always required; users can submit either a photo or a tracker session
       formDataToSend.append('requiresProof', true);
       formDataToSend.append('requiresTracker', formData.requiresTracker);
       if (formData.activityType) {
         formDataToSend.append('activityType', formData.activityType);
       }
-      formDataToSend.append('conditions', formData.conditions || '');
+      formDataToSend.append('conditions', JSON.stringify(validConditions));
       if (formData.maxParticipants) {
         formDataToSend.append('maxParticipants', formData.maxParticipants);
       }
       formDataToSend.append('status', formData.status);
       formDataToSend.append('rewards', JSON.stringify(formData.rewards));
-      
+
       // Handle images - only one image allowed
       // If a new image file is uploaded, use that; otherwise keep existing image
       if (imageFile) {
@@ -187,18 +276,28 @@ export default function AdultChallengeForm({ initialData = null }) {
         formDataToSend.append('images', JSON.stringify([]));
       }
 
-      const endpoint = initialData 
+      const endpoint = initialData
         ? `/adult-challenges/${initialData._id || initialData.id}`
         : '/adult-challenges';
-      
+
       const method = initialData ? apiPutFormData : apiPostFormData;
-      
+
+
       await method(endpoint, formDataToSend);
+
+      toast.success(initialData ? "Updated Successfully" : "Created Successfully", {
+        description: initialData
+          ? "Challenge has been updated successfully."
+          : "New challenge has been created successfully.",
+      });
 
       router.push("/admin/adults/adult-challenges");
       router.refresh();
     } catch (err) {
       console.error('Error saving challenge:', err);
+      toast.error("Error Saving Challenge", {
+        description: err.message || "Something went wrong. Please try again.",
+      });
       setError(err.message || 'Failed to save challenge');
     } finally {
       setLoading(false);
@@ -244,13 +343,14 @@ export default function AdultChallengeForm({ initialData = null }) {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Enter challenge description..."
               rows={3}
+              required
             />
           </div>
         </div>
@@ -259,26 +359,7 @@ export default function AdultChallengeForm({ initialData = null }) {
       {/* Challenge Duration & Time */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">Challenge Duration & Time</h3>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="challengeType">Challenge Type *</Label>
-            <Select
-              value={formData.challengeType}
-              onValueChange={(value) => handleChange("challengeType", value)}
-            >
-              <SelectTrigger id="challengeType">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily_repeat">Daily repeat (same target each day)</SelectItem>
-                <SelectItem value="time_gated">Time gated (complete within time limit)</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              How the challenge runs: daily target, time limit, or custom
-            </p>
-          </div>
+        <div className="grid gap-3 md:grid-cols-2">
 
           <div className="space-y-2">
             <Label htmlFor="duration">Duration (days) *</Label>
@@ -315,17 +396,16 @@ export default function AdultChallengeForm({ initialData = null }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
+            <Label htmlFor="registrationDeadline">Registration Deadline *</Label>
             <Input
-              id="timeLimit"
-              type="number"
-              min="1"
-              value={formData.timeLimit || ""}
-              onChange={(e) => handleChange("timeLimit", e.target.value ? parseInt(e.target.value) : null)}
-              placeholder="0"
+              id="registrationDeadline"
+              type="datetime-local"
+              value={formData.registrationDeadline}
+              onChange={(e) => handleChange("registrationDeadline", e.target.value)}
+              required
             />
             <p className="text-xs text-muted-foreground">
-              Optional: Enter time limit if this challenge should be time-gated
+              Registration closes at this date and time
             </p>
           </div>
         </div>
@@ -348,7 +428,7 @@ export default function AdultChallengeForm({ initialData = null }) {
               min="0"
               step="0.1"
               value={formData.dailyGoal.value}
-              onChange={(e) => handleChange("dailyGoal.value", parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleChange("dailyGoal.value", e.target.value)}
               required
               placeholder="e.g., 7"
             />
@@ -356,8 +436,8 @@ export default function AdultChallengeForm({ initialData = null }) {
 
           <div className="space-y-2">
             <Label htmlFor="goalUnit">Unit *</Label>
-            <Select 
-              value={formData.dailyGoal.unit} 
+            <Select
+              value={formData.dailyGoal.unit}
               onValueChange={(value) => handleChange("dailyGoal.unit", value)}
             >
               <SelectTrigger id="goalUnit">
@@ -386,17 +466,7 @@ export default function AdultChallengeForm({ initialData = null }) {
                   required={formData.dailyGoal.unit === "custom"}
                 />
               </>
-            ) : (
-              <div className="h-10 flex items-end">
-                <span className="text-sm text-muted-foreground">
-                  {formData.dailyGoal.unit === "km" && "Kilometers"}
-                  {formData.dailyGoal.unit === "m" && "Meters"}
-                  {formData.dailyGoal.unit === "minutes" && "Minutes"}
-                  {formData.dailyGoal.unit === "hours" && "Hours"}
-                  {formData.dailyGoal.unit === "count" && "Count"}
-                </span>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -409,7 +479,7 @@ export default function AdultChallengeForm({ initialData = null }) {
             Photo proof is always required (participants can take a photo or upload one). Optionally enable GPS tracking for activities like running.
           </p>
         </div>
-        
+
         <div className="space-y-4">
           <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg">
             <div className="flex-shrink-0 mt-1">
@@ -443,8 +513,8 @@ export default function AdultChallengeForm({ initialData = null }) {
             {formData.requiresTracker && (
               <div className="ml-7 space-y-2">
                 <Label htmlFor="activityType">Activity Type *</Label>
-                <Select 
-                  value={formData.activityType || "running"} 
+                <Select
+                  value={formData.activityType || "running"}
                   onValueChange={(value) => handleChange("activityType", value)}
                 >
                   <SelectTrigger id="activityType">
@@ -469,15 +539,39 @@ export default function AdultChallengeForm({ initialData = null }) {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">Additional Settings</h3>
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="conditions">Conditions/Rules</Label>
-            <Textarea
-              id="conditions"
-              value={formData.conditions}
-              onChange={(e) => handleChange("conditions", e.target.value)}
-              placeholder="Enter challenge conditions and rules..."
-              rows={4}
-            />
+          <div className="space-y-2 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <Label>Conditions / Rules *</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addCondition}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add condition
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              At least one condition is required. You can add multiple.
+            </p>
+            <div className="space-y-3">
+              {formData.conditions.map((condition, index) => (
+                <div key={index} className="flex gap-2 items-center border rounded p-3 bg-muted/30">
+                  <Input
+                    className="flex-1"
+                    value={typeof condition === "string" ? condition : condition?.text ?? ""}
+                    onChange={(e) => updateCondition(index, e.target.value)}
+                    placeholder="Condition text..."
+                    required={index === 0}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeCondition(index)}
+                    disabled={formData.conditions.length <= 1}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -562,7 +656,7 @@ export default function AdultChallengeForm({ initialData = null }) {
             Configure rewards for top 3 positions. Each position can have multiple rewards (badges, titles, certificates, etc.)
           </p>
         </div>
-        
+
         {[1, 2, 3].map((position) => (
           <div key={position} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -662,8 +756,8 @@ export default function AdultChallengeForm({ initialData = null }) {
         <h3 className="text-lg font-semibold">Status</h3>
         <div className="space-y-2">
           <Label htmlFor="status">Status *</Label>
-          <Select 
-            value={formData.status.toString()} 
+          <Select
+            value={formData.status.toString()}
             onValueChange={(value) => handleChange("status", parseInt(value))}
           >
             <SelectTrigger id="status">

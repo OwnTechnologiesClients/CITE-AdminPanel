@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import AuthProvider from "@/components/auth/AuthProvider";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
       >
         <AuthProvider>{children}</AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

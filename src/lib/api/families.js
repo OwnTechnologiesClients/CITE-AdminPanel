@@ -202,33 +202,6 @@ export async function getFamilyScheduleById(scheduleId) {
 }
 
 /**
- * Get family media (admin only - read-only)
- */
-export async function getFamilyMedia(familyId, params = {}) {
-  try {
-    const queryParams = { familyId, ...params };
-    const response = await apiGet('/family-media/list', queryParams);
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching family media:', error);
-    throw error;
-  }
-}
-
-/**
- * Get family media folders (admin only - read-only)
- */
-export async function getFamilyMediaFolders(familyId) {
-  try {
-    const response = await apiGet('/family-media/folders/list', { familyId });
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching family media folders:', error);
-    throw error;
-  }
-}
-
-/**
  * Get family calendar (aggregated view) (admin only - read-only)
  */
 export async function getFamilyCalendar(familyId, date) {

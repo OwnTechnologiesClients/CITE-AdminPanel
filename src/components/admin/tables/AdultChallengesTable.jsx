@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getAdultChallenges, deleteChallenge } from "@/lib/api/adultChallenges";
+import { toast } from "sonner";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdultChallengesTable() {
   const router = useRouter();
@@ -26,16 +37,21 @@ export default function AdultChallengesTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchChallenges();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const fetchChallenges = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const data = await getAdultChallenges();
       setChallenges(data || []);
     } catch (err) {
@@ -56,19 +72,34 @@ export default function AdultChallengesTable() {
       await deleteChallenge(challengeId);
       // Refresh the list
       await fetchChallenges();
+      toast.success("Deleted Successfully", {
+        description: `Challenge "${challengeName}" has been deleted.`,
+      });
     } catch (err) {
       console.error('Error deleting challenge:', err);
-      alert('Failed to delete challenge. Please try again.');
+      toast.error("Error Deleting Challenge", {
+        description: "Failed to delete challenge. Please try again.",
+      });
     } finally {
       setDeletingId(null);
     }
   };
 
-  const filteredChallenges = challenges.filter(
-    (challenge) =>
-      challenge.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      challenge.slug?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChallenges = useMemo(
+    () =>
+      challenges.filter(
+        (challenge) =>
+          challenge.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          challenge.slug?.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [challenges, searchQuery]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredChallenges.length / ITEMS_PER_PAGE));
+  const paginatedChallenges = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredChallenges.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredChallenges, currentPage]);
 
   if (loading) {
     return (
@@ -128,7 +159,7 @@ export default function AdultChallengesTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredChallenges.map((challenge) => (
+              paginatedChallenges.map((challenge) => (
                 <TableRow key={challenge._id || challenge.id}>
                   <TableCell className="font-medium">{challenge.name}</TableCell>
                   <TableCell>{challenge.duration} days</TableCell>
@@ -149,9 +180,9 @@ export default function AdultChallengesTable() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(challenge._id || challenge.id, challenge.name)}
                         disabled={deletingId === (challenge._id || challenge.id)}
@@ -165,6 +196,41 @@ export default function AdultChallengesTable() {
             )}
           </TableBody>
         </Table>
+
+        {filteredChallenges.length > 0 && (
+          <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredChallenges.length)} of {filteredChallenges.length}
+            </p>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

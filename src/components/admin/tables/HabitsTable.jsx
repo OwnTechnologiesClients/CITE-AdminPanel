@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,14 +14,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { getHabits } from "@/lib/api/habits";
 import { formatDate } from "@/lib/utils";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function HabitsTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function fetchHabits() {
@@ -41,12 +52,26 @@ export default function HabitsTable() {
     fetchHabits();
   }, []);
 
-  const filteredHabits = habits.filter(
-    (habit) =>
-      habit.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (habit.userId?.fullName && habit.userId.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (habit.userId?.email && habit.userId.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const filteredHabits = useMemo(
+    () =>
+      habits.filter(
+        (habit) =>
+          habit.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (habit.userId?.fullName && habit.userId.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (habit.userId?.email && habit.userId.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      ),
+    [habits, searchQuery]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredHabits.length / ITEMS_PER_PAGE));
+  const paginatedHabits = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredHabits.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredHabits, currentPage]);
 
   return (
     <Card>
@@ -92,7 +117,7 @@ export default function HabitsTable() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredHabits.map((habit) => {
+                  paginatedHabits.map((habit) => {
                     const userName = habit.userId?.fullName || habit.userId?.email || "Unknown";
                     return (
                       <TableRow key={habit._id || habit.id}>
@@ -115,9 +140,40 @@ export default function HabitsTable() {
                 )}
               </TableBody>
             </Table>
-            <div className="mt-4 text-sm text-muted-foreground">
-              Showing {filteredHabits.length} of {habits.length} habits
-            </div>
+            {filteredHabits.length > 0 && (
+              <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                <p className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredHabits.length)} of {filteredHabits.length}
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         )}
       </CardContent>

@@ -6,7 +6,7 @@ export default function ReflectionsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Reflections</h1>
         <p className="text-muted-foreground mt-2">
-          View mood and feeling reflections from adult users
+          View mood reflections from adult users
         </p>
       </div>
       <ReflectionsTable />

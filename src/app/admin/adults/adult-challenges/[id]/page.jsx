@@ -59,6 +59,17 @@ export default function AdultChallengeDetailPage() {
     return null;
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
   const getPositionBadge = (position) => {
     if (!position) return null;
     const colors = {
@@ -160,6 +171,15 @@ export default function AdultChallengeDetailPage() {
                   {challenge.duration} days
                 </div>
               </div>
+              {challenge.registrationDeadline && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Registration Deadline</p>
+                  <div className="flex items-center gap-1 text-sm">
+                    <Clock className="size-4 text-muted-foreground" />
+                    {formatDateTime(challenge.registrationDeadline)}
+                  </div>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium mb-1">Start Date</p>
                 <div className="flex items-center gap-1 text-sm">
@@ -182,14 +202,20 @@ export default function AdultChallengeDetailPage() {
               </div>
             </div>
 
-            {challenge.conditions && (
+            {challenge.conditions && (Array.isArray(challenge.conditions) ? challenge.conditions.length > 0 : challenge.conditions) && (
               <>
                 <Separator />
                 <div>
                   <p className="text-sm font-medium mb-1">Conditions</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">
-                    {challenge.conditions}
-                  </p>
+                  {Array.isArray(challenge.conditions) ? (
+                    <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                      {challenge.conditions.map((c, i) => (
+                        <li key={i}>{typeof c === "object" && c !== null ? (c.text ?? "") : String(c)}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{challenge.conditions}</p>
+                  )}
                 </div>
               </>
             )}
@@ -211,19 +237,6 @@ export default function AdultChallengeDetailPage() {
                 </span>
               </div>
             </div>
-
-            {challenge.timeLimit && (
-              <>
-                <Separator />
-                <div>
-                  <p className="text-sm font-medium mb-2">Time Limit</p>
-                  <div className="flex items-center gap-2">
-                    <Clock className="size-4 text-muted-foreground" />
-                    <span className="text-sm">{challenge.timeLimit} minutes</span>
-                  </div>
-                </div>
-              </>
-            )}
 
             <Separator />
             <div>

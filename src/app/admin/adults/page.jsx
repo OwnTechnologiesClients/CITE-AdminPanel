@@ -108,7 +108,7 @@ export default function AdultsDashboard() {
           change=""
           changeType="neutral"
           icon={Heart}
-          description="Mood/feeling entries"
+          description="Mood entries"
         />
       </div>
 
