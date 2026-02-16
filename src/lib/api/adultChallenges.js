@@ -100,3 +100,49 @@ export async function deleteChallenge(challengeId) {
     throw error;
   }
 }
+
+/**
+ * Disqualify a participant
+ * @param {string} challengeId - Challenge ID
+ * @param {string} userId - User ID
+ * @param {string} reason - Disqualification reason
+ */
+export async function disqualifyParticipant(challengeId, userId, reason) {
+  try {
+    const response = await apiPost(`/adult-challenges/${challengeId}/participants/${userId}/disqualify`, { reason });
+    return response.data;
+  } catch (error) {
+    console.error('Error disqualifying participant:', error);
+    throw error;
+  }
+}
+
+/**
+ * Remove disqualification from a participant
+ * @param {string} challengeId - Challenge ID
+ * @param {string} userId - User ID
+ */
+export async function removeDisqualification(challengeId, userId) {
+  try {
+    const response = await apiPost(`/adult-challenges/${challengeId}/participants/${userId}/remove-disqualification`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing disqualification:', error);
+    throw error;
+  }
+}
+
+/**
+ * Finalize winners and transfer rewards
+ * @param {string} challengeId - Challenge ID
+ * @param {object} winners - Winner selections { position1UserId, position2UserId, position3UserId }
+ */
+export async function finalizeWinnersAndTransferRewards(challengeId, winners) {
+  try {
+    const response = await apiPost(`/adult-challenges/${challengeId}/finalize-winners`, { winners });
+    return response.data;
+  } catch (error) {
+    console.error('Error finalizing winners:', error);
+    throw error;
+  }
+}

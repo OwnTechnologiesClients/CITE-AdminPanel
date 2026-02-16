@@ -166,9 +166,13 @@ export default function AdultChallengesTable() {
                   <TableCell>{challenge.startDate ? formatDate(challenge.startDate) : '-'}</TableCell>
                   <TableCell>{challenge.participantsCount || 0}</TableCell>
                   <TableCell>
-                    <Badge variant={challenge.status === 1 ? "default" : "outline"}>
-                      {challenge.status === 1 ? "Active" : "Inactive"}
-                    </Badge>
+                    {(challenge.winnersFinalized || new Date(challenge.endDate) < new Date()) ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>
+                    ) : challenge.status === 1 ? (
+                      <Badge className="bg-blue-500 hover:bg-blue-600">Active</Badge>
+                    ) : (
+                      <Badge variant="secondary">Inactive</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
